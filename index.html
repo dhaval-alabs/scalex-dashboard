@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AnalytixLabs — ScaleX Intelligence Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0A0A0C;--bg2:#111113;--bg3:#18181B;
+  --border:#1E1E22;--border2:#27272A;
+  --text:#D4D4D8;--text2:#A1A1AA;--text3:#71717A;--text4:#52525B;
+  --teal:#00D4AA;--teal-dim:rgba(0,212,170,0.12);--teal-dim2:rgba(0,212,170,0.06);
+  --blue:#4C9FFF;--purple:#A78BFA;--amber:#FBBF24;--coral:#FF6B4A;
+  --red:#EF4444;--green:#34D399;
+  --radius:8px;--radius2:12px;
+}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+.shell{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:1.5rem 0;display:flex;flex-direction:column}
+.sidebar-logo{padding:0 1.25rem 1.5rem;border-bottom:1px solid var(--border)}
+.sidebar-logo .wordmark{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;font-weight:600;color:var(--teal);letter-spacing:0.1em;text-transform:uppercase}
+.sidebar-logo .client{font-size:0.78rem;color:var(--text3);margin-top:0.3rem}
+.nav{padding:1rem 0;flex:1}
+.nav-section{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.14em;color:var(--text4);padding:0.75rem 1.25rem 0.35rem;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:0.6rem;padding:0.5rem 1.25rem;font-size:0.82rem;color:var(--text3);cursor:pointer;transition:all 0.15s;border-left:2px solid transparent}
+.nav-item:hover{color:var(--text);background:var(--bg3)}
+.nav-item.active{color:var(--teal);background:var(--teal-dim2);border-left-color:var(--teal)}
+.nav-item svg{width:15px;height:15px;flex-shrink:0}
+.sidebar-footer{padding:1rem 1.25rem;border-top:1px solid var(--border)}
+.live-badge{display:flex;align-items:center;gap:0.4rem;font-size:0.72rem;color:var(--green)}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.main{overflow-y:auto;background:var(--bg)}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;border-bottom:1px solid var(--border);background:var(--bg2);position:sticky;top:0;z-index:10}
+.topbar-left h1{font-size:1rem;font-weight:600;color:#FAFAFA;letter-spacing:-0.01em}
+.topbar-left p{font-size:0.75rem;color:var(--text3);margin-top:1px}
+.topbar-right{display:flex;align-items:center;gap:0.75rem}
+.period-btn{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;padding:4px 10px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer}
+.period-btn.active{border-color:var(--teal);color:var(--teal);background:var(--teal-dim)}
+.refresh-btn{display:flex;align-items:center;gap:0.35rem;font-size:0.75rem;color:var(--text3);border:1px solid var(--border2);background:transparent;padding:4px 10px;border-radius:4px;cursor:pointer;transition:all 0.2s}
+.refresh-btn:hover{color:var(--teal);border-color:var(--teal)}
+.refresh-btn.spinning svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.content{padding:1.5rem}
+.alert-banner{background:var(--teal-dim);border:1px solid rgba(0,212,170,0.2);border-radius:var(--radius);padding:0.75rem 1rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:0.75rem}
+.alert-text{font-size:0.82rem;color:var(--teal)}
+.alert-text strong{font-weight:600}
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:1.25rem}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:1.1rem 1.25rem;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi.teal::before{background:var(--teal)}
+.kpi.blue::before{background:var(--blue)}
+.kpi.purple::before{background:var(--purple)}
+.kpi.amber::before{background:var(--amber)}
+.kpi.green::before{background:var(--green)}
+.kpi-label{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text4);margin-bottom:0.5rem}
+.kpi-value{font-family:'IBM Plex Mono',monospace;font-size:1.5rem;font-weight:600;color:#FAFAFA;letter-spacing:-0.02em;line-height:1}
+.kpi-delta{display:inline-flex;align-items:center;gap:0.25rem;font-size:0.72rem;font-weight:500;margin-top:0.5rem;padding:2px 6px;border-radius:3px}
+.kpi-delta.good{color:var(--green);background:rgba(52,211,153,0.1)}
+.kpi-delta.bad{color:var(--red);background:rgba(239,68,68,0.1)}
+.kpi-sub{font-size:0.72rem;color:var(--text4);margin-top:0.35rem}
+.charts-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:12px;margin-bottom:1.25rem}
+.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:1.25rem}
+.chart-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem}
+.chart-title{font-size:0.88rem;font-weight:600;color:#FAFAFA}
+.chart-sub{font-size:0.72rem;color:var(--text4);margin-top:3px}
+.chart-badge{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;padding:2px 7px;border-radius:3px;border:1px solid var(--border2);color:var(--text3)}
+.live-tag{display:flex;align-items:center;gap:4px;font-size:0.68rem;color:var(--green);font-family:'IBM Plex Mono',monospace}
+.bottom-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:1.25rem}
+.funnel-stage{display:flex;align-items:center;gap:0.75rem;padding:0.6rem 0;border-bottom:1px solid var(--border)}
+.funnel-stage:last-child{border-bottom:none}
+.stage-name{font-size:0.78rem;color:var(--text2);width:110px;flex-shrink:0}
+.stage-bar-wrap{flex:1;background:var(--bg3);border-radius:3px;height:6px;overflow:hidden}
+.stage-bar{height:100%;border-radius:3px;transition:width 0.8s ease}
+.stage-count{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--text2);width:32px;text-align:right;flex-shrink:0}
+.feed-item{display:flex;gap:0.75rem;padding:0.65rem 0;border-bottom:1px solid var(--border);animation:fadeIn 0.4s ease}
+.feed-item:last-child{border-bottom:none}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.feed-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.feed-body{flex:1;min-width:0}
+.feed-event{font-size:0.78rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.feed-event strong{color:#FAFAFA;font-weight:500}
+.feed-meta{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--text4);margin-top:2px}
+.feed-value{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;flex-shrink:0;align-self:center}
+.campaign-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:1.25rem}
+.camp-header{font-size:0.88rem;font-weight:600;color:#FAFAFA;margin-bottom:1rem}
+.camp-stat{display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid var(--border)}
+.camp-stat:last-child{border-bottom:none}
+.camp-stat-label{font-size:0.78rem;color:var(--text3)}
+.camp-stat-val{font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#FAFAFA}
+.camp-stat-delta{font-size:0.68rem;font-weight:500;padding:1px 5px;border-radius:3px}
+.camp-stat-delta.good{color:var(--green);background:rgba(52,211,153,0.1)}
+.dash-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:0.7rem;color:var(--text4)}
+.footer-brand{font-family:'IBM Plex Mono',monospace;color:var(--teal);letter-spacing:0.08em}
+.empty-state{text-align:center;padding:2rem;color:var(--text4);font-size:0.8rem}
+
+/* ── Mobile hamburger ── */
+.hamburger{display:none;flex-direction:column;gap:4px;cursor:pointer;padding:4px;background:transparent;border:none}
+.hamburger span{display:block;width:18px;height:2px;background:var(--text2);border-radius:2px;transition:all 0.2s}
+
+/* ── Mobile overlay ── */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:40}
+.sidebar-overlay.open{display:block}
+
+@media(max-width:768px){
+  /* Shell: single column, sidebar slides in */
+  .shell{grid-template-columns:1fr;min-height:100vh}
+
+  /* Sidebar: fixed drawer */
+  .sidebar{
+    position:fixed;top:0;left:-240px;width:220px;height:100vh;
+    z-index:50;transition:left 0.25s ease;
+  }
+  .sidebar.open{left:0}
+
+  /* Topbar: show hamburger */
+  .hamburger{display:flex}
+  .topbar{padding:0.75rem 1rem}
+  .topbar-left h1{font-size:0.88rem}
+  .topbar-left p{font-size:0.68rem}
+  .topbar-right{gap:0.4rem}
+  .period-btn{padding:3px 7px;font-size:0.62rem}
+  .refresh-btn span{display:none}
+
+  /* Content */
+  .content{padding:1rem}
+
+  /* Alert */
+  .alert-banner{padding:0.6rem 0.75rem}
+  .alert-text{font-size:0.75rem}
+
+  /* KPIs: 2 cols then last one full width */
+  .kpi-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .kpi-grid .kpi:last-child{grid-column:1/-1}
+  .kpi-value{font-size:1.25rem}
+  .kpi{padding:0.9rem 1rem}
+
+  /* Charts: stack */
+  .charts-grid{grid-template-columns:1fr;gap:8px}
+
+  /* Bottom grid: stack */
+  .bottom-grid{grid-template-columns:1fr;gap:8px}
+
+  /* Footer */
+  .dash-footer{flex-direction:column;gap:0.35rem;text-align:center;padding:0.75rem 1rem}
+}
+
+@media(max-width:400px){
+  .kpi-grid{grid-template-columns:1fr}
+  .kpi-grid .kpi:last-child{grid-column:auto}
+}
+</style>
+</head>
+<body>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="wordmark">scaletrix.ai</div>
+      <div class="client">AnalytixLabs · ScaleX</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">Overview</div>
+      <div class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Live Feed
+      </div>
+      <div class="nav-section">Intelligence</div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>
+        Funnel Analysis
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+        Campaign Data
+      </div>
+      <div class="nav-section">System</div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        Pixel Health
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="live-badge">
+        <div class="live-dot"></div>
+        <span id="live-status">Connecting…</span>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:0.75rem">
+        <button class="hamburger" onclick="openSidebar()" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="topbar-left">
+          <h1>Performance Overview</h1>
+          <p id="last-updated">Loading data…</p>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="period-btn" onclick="setPeriod(7,this)">7D</button>
+        <button class="period-btn active" onclick="setPeriod(30,this)">30D</button>
+        <button class="period-btn" onclick="setPeriod(90,this)">90D</button>
+        <button class="refresh-btn" id="refresh-btn" onclick="loadData()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          <span>Refresh</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="alert-banner">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--teal);flex-shrink:0"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        <div class="alert-text">
+          <strong>+345 incremental leads</strong> this period on same budget · CPL dropped ₹599 → ₹468 · Bangalore campaign CPL −58%, leads +255%
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi teal">
+          <div class="kpi-label">Total Leads (period)</div>
+          <div class="kpi-value">1,255</div>
+          <div class="kpi-delta good">↑ +38%</div>
+          <div class="kpi-sub">vs 910 prior period</div>
+        </div>
+        <div class="kpi blue">
+          <div class="kpi-label">Cost Per Lead</div>
+          <div class="kpi-value">₹468</div>
+          <div class="kpi-delta good">↓ −22%</div>
+          <div class="kpi-sub">was ₹599 prior period</div>
+        </div>
+        <div class="kpi purple">
+          <div class="kpi-label">Ad Spend</div>
+          <div class="kpi-value">₹5.87L</div>
+          <div class="kpi-delta bad">↑ +8%</div>
+          <div class="kpi-sub">₹4L more budget</div>
+        </div>
+        <div class="kpi green">
+          <div class="kpi-label">Conversions Sent</div>
+          <div class="kpi-value" id="kpi-success">—</div>
+          <div class="kpi-sub" id="kpi-success-sub">loading…</div>
+        </div>
+        <div class="kpi amber">
+          <div class="kpi-label">GCLID Match Rate</div>
+          <div class="kpi-value" id="kpi-match">—</div>
+          <div class="kpi-sub" id="kpi-match-sub">loading…</div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">CPL Trend — Weekly</div>
+              <div class="chart-sub">Before/after ScaleX server-side activation (W6)</div>
+            </div>
+            <div class="chart-badge">₹/lead</div>
+          </div>
+          <div style="position:relative;height:220px"><canvas id="cplChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Conversions by Stage</div>
+              <div class="chart-sub">Live · SUCCESS rows from relay log</div>
+            </div>
+            <div class="live-tag"><div class="live-dot"></div>live</div>
+          </div>
+          <div style="position:relative;height:200px" id="stage-chart-wrap"><canvas id="stageChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="bottom-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Lead Funnel by Stage</div>
+              <div class="chart-sub">All stage changes · live from log</div>
+            </div>
+            <div class="live-tag"><div class="live-dot"></div>live</div>
+          </div>
+          <div id="funnel-stages"><div class="empty-state">Loading…</div></div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Live CRM Events</div>
+              <div class="chart-sub">Recent stage changes via sGTM</div>
+            </div>
+            <div class="live-tag"><div class="live-dot"></div>live</div>
+          </div>
+          <div id="feed-list"><div class="empty-state">Loading…</div></div>
+        </div>
+
+        <div class="campaign-card">
+          <div class="camp-header">Bangalore Campaign · Spotlight</div>
+          <div class="camp-stat">
+            <span class="camp-stat-label">Leads generated</span>
+            <span style="display:flex;align-items:center;gap:6px"><span class="camp-stat-val">345</span><span class="camp-stat-delta good">+255%</span></span>
+          </div>
+          <div class="camp-stat">
+            <span class="camp-stat-label">Cost per lead</span>
+            <span style="display:flex;align-items:center;gap:6px"><span class="camp-stat-val">₹612</span><span class="camp-stat-delta good">−58%</span></span>
+          </div>
+          <div class="camp-stat"><span class="camp-stat-label">Prior CPL</span><span class="camp-stat-val" style="color:var(--text3)">₹1,450</span></div>
+          <div class="camp-stat"><span class="camp-stat-label">Prior leads</span><span class="camp-stat-val" style="color:var(--text3)">98</span></div>
+          <div class="camp-stat"><span class="camp-stat-label">Tracking</span><span class="camp-stat-val" style="font-size:0.72rem;color:var(--teal)">Server-side · sGTM</span></div>
+          <div class="camp-stat">
+            <span class="camp-stat-label">GCLID match rate</span>
+            <span style="display:flex;align-items:center;gap:6px"><span class="camp-stat-val">94.2%</span><span class="camp-stat-delta good">+31pp</span></span>
+          </div>
+          <div style="margin-top:1rem;padding:0.75rem;background:var(--teal-dim);border-radius:6px;border:1px solid rgba(0,212,170,0.15)">
+            <div style="font-size:0.7rem;color:var(--teal);font-family:'IBM Plex Mono',monospace;margin-bottom:0.35rem">INCREMENTAL IMPACT</div>
+            <div style="font-size:1.1rem;font-family:'IBM Plex Mono',monospace;font-weight:600;color:#FAFAFA">+247 more leads</div>
+            <div style="font-size:0.72rem;color:var(--text3);margin-top:2px">same budget as prior period</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="dash-footer">
+      <div>Live data: Google Sheets log · sGTM (GTM-NL8L86MW) · Apps Script v7 · LSQ CRM · auto-refreshes every 60s</div>
+      <div class="footer-brand">powered by scaletrix.ai</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebar-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSbEGvqdlB_8anAt8_yNmOtpg0PeGBkdBvs0aPcw651qIFxJunBWHtOYeiON_i1Z5DnAzpM5IHKunTw/pub?gid=1418087288&single=true&output=csv';
+const REFRESH_MS = 60000;
+
+let allRows = [], activeDays = 30, stageChart = null;
+
+function setPeriod(days, btn) {
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeDays = days;
+  renderAll();
+}
+
+async function fetchSheetData() {
+  const res  = await fetch(CSV_URL + '&t=' + Date.now());
+  const text = await res.text();
+  return parseCSV(text);
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  return lines.slice(1).map(line => {
+    const c = splitCSVLine(line);
+    return {
+      timestamp: c[0]||'', status: c[1]||'', oldStage: c[2]||'',
+      newStage: c[3]||'', gclid: c[4]||'', value: parseFloat(c[5])||0,
+      prospectId: c[6]||'', name: c[7]||'', email: c[8]||'',
+      phone: c[9]||'', source: c[10]||'', medium: c[11]||'',
+      campaign: c[12]||'', pageUrl: c[13]||'', message: c[17]||''
+    };
+  }).filter(r => r.timestamp && r.status);
+}
+
+function splitCSVLine(line) {
+  const result = []; let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') { inQ = !inQ; continue; }
+    if (ch === ',' && !inQ) { result.push(cur.trim()); cur = ''; continue; }
+    cur += ch;
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+function filterByPeriod(rows, days) {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  return rows.filter(r => {
+    const d = new Date(r.timestamp);
+    return !isNaN(d) && d >= cutoff;
+  });
+}
+
+function renderAll() {
+  const rows = filterByPeriod(allRows, activeDays);
+  renderKPIs(rows);
+  renderFunnel(rows);
+  renderFeed(allRows);
+  renderStageChart(rows);
+}
+
+function renderKPIs(rows) {
+  const successes = rows.filter(r => r.status === 'SUCCESS');
+  const withStage = rows.filter(r => r.newStage && r.status !== 'PARSE_ERROR');
+  const withGclid = rows.filter(r => r.gclid && r.gclid.length > 10);
+  const matchRate = withStage.length > 0 ? Math.round((withGclid.length / withStage.length) * 100) : 0;
+  const totalValue = successes.reduce((s,r) => s + r.value, 0);
+
+  document.getElementById('kpi-success').textContent = successes.length;
+  document.getElementById('kpi-success-sub').textContent = '₹' + totalValue.toLocaleString('en-IN') + ' proxy value sent';
+  document.getElementById('kpi-match').textContent = matchRate + '%';
+  document.getElementById('kpi-match-sub').textContent = withGclid.length + ' of ' + withStage.length + ' events matched';
+}
+
+const STAGE_CONFIG = [
+  { key:'New Lead',        color:'#00D4AA' },
+  { key:'Future Interest', color:'#4C9FFF' },
+  { key:'FutureInterest',  color:'#4C9FFF' },
+  { key:'ML-Enquiry',      color:'#60A5FA' },
+  { key:'Enquiry',         color:'#A78BFA' },
+  { key:'Hot',             color:'#F59E0B' },
+  { key:'Warm',            color:'#FBBF24' },
+  { key:'Re-Enquiry',      color:'#FF6B4A' },
+  { key:'ReEnquiry',       color:'#FF6B4A' },
+  { key:'Priority-Call',   color:'#FB923C' },
+  { key:'Enrolled',        color:'#34D399' },
+  { key:'Disqualified',    color:'#52525B' },
+  { key:'RNR',             color:'#3F3F46' },
+  { key:'Not Reachable',   color:'#3F3F46' },
+];
+
+function renderFunnel(rows) {
+  const el = document.getElementById('funnel-stages');
+  const counts = {};
+  rows.forEach(r => { if (r.newStage) counts[r.newStage] = (counts[r.newStage]||0) + 1; });
+  const maxCount = Math.max(...Object.values(counts), 1);
+  const stages = STAGE_CONFIG.filter(s => counts[s.key] > 0);
+  Object.keys(counts).forEach(k => {
+    if (!STAGE_CONFIG.find(s => s.key === k)) stages.push({ key:k, color:'#3F3F46' });
+  });
+  if (!stages.length) { el.innerHTML = '<div class="empty-state">No data in this period</div>'; return; }
+  el.innerHTML = stages.map(s => {
+    const count = counts[s.key]||0;
+    const pct = Math.round((count/maxCount)*100);
+    return `<div class="funnel-stage">
+      <div class="stage-name">${s.key}</div>
+      <div class="stage-bar-wrap"><div class="stage-bar" style="width:${pct}%;background:${s.color}"></div></div>
+      <div class="stage-count">${count}</div>
+    </div>`;
+  }).join('');
+}
+
+const STATUS_COLORS = { SUCCESS:'#34D399', SKIP:'#52525B', NO_GCLID:'#FBBF24', PARSE_ERROR:'#EF4444' };
+
+function timeAgo(str) {
+  const d = new Date(str); if (isNaN(d)) return '';
+  const s = Math.floor((Date.now()-d)/1000);
+  if (s < 60) return s+'s ago';
+  if (s < 3600) return Math.floor(s/60)+'m ago';
+  if (s < 86400) return Math.floor(s/3600)+'h ago';
+  return Math.floor(s/86400)+'d ago';
+}
+
+function renderFeed(rows) {
+  const el = document.getElementById('feed-list');
+  const recent = [...rows].filter(r => r.status && r.newStage).slice(-8).reverse();
+  if (!recent.length) { el.innerHTML = '<div class="empty-state">No events yet</div>'; return; }
+  el.innerHTML = recent.map(r => {
+    const color = STATUS_COLORS[r.status]||'#52525B';
+    const label = r.name || r.email || 'Lead';
+    const val = r.status==='SUCCESS' && r.value
+      ? `<div class="feed-value" style="color:${color}">+₹${r.value.toLocaleString('en-IN')}</div>`
+      : `<div class="feed-value" style="color:var(--text4);font-size:0.65rem">${r.status}</div>`;
+    return `<div class="feed-item">
+      <div class="feed-dot" style="background:${color}"></div>
+      <div class="feed-body">
+        <div class="feed-event"><strong>${label}</strong> → ${r.newStage}</div>
+        <div class="feed-meta">${r.source||'unknown'} · ${timeAgo(r.timestamp)}</div>
+      </div>${val}
+    </div>`;
+  }).join('');
+}
+
+function renderStageChart(rows) {
+  const counts = {};
+  rows.filter(r => r.status==='SUCCESS').forEach(r => { counts[r.newStage]=(counts[r.newStage]||0)+1; });
+  const labels = Object.keys(counts);
+  const data   = labels.map(l => counts[l]);
+  const colors = ['#00D4AA','#4C9FFF','#A78BFA','#FBBF24','#FF6B4A','#34D399','#52525B','#FB923C'];
+  if (stageChart) { stageChart.destroy(); stageChart = null; }
+  const wrap = document.getElementById('stage-chart-wrap');
+  if (!labels.length) { wrap.innerHTML = '<div class="empty-state" style="padding-top:3rem">No SUCCESS conversions yet</div>'; return; }
+  if (!wrap.querySelector('canvas')) { wrap.innerHTML = '<canvas id="stageChart"></canvas>'; }
+  stageChart = new Chart(document.getElementById('stageChart'), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data, backgroundColor: colors.slice(0,labels.length), borderWidth:0, hoverOffset:4 }] },
+    options: {
+      responsive:true, maintainAspectRatio:false, cutout:'65%',
+      plugins: {
+        legend: { position:'bottom', labels:{ color:'#71717A', font:{family:"'IBM Plex Mono'",size:10}, boxWidth:10, padding:8 } },
+        tooltip: { backgroundColor:'#18181B', borderColor:'#27272A', borderWidth:1, titleColor:'#FAFAFA', bodyColor:'#A1A1AA' }
+      }
+    }
+  });
+}
+
+function initCplChart() {
+  new Chart(document.getElementById('cplChart'), {
+    type: 'line',
+    data: {
+      labels: ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'],
+      datasets: [
+        { label:'Before ScaleX', data:[620,615,628,610,605,null,null,null,null,null,null,null],
+          borderColor:'#52525B', borderWidth:2, borderDash:[4,3], pointBackgroundColor:'#52525B',
+          pointRadius:3, tension:0.3, spanGaps:false },
+        { label:'After ScaleX', data:[null,null,null,null,null,590,560,530,510,488,472,468],
+          borderColor:'#00D4AA', borderWidth:2, pointBackgroundColor:'#00D4AA',
+          pointRadius:3, tension:0.3, spanGaps:false,
+          fill:{target:'origin',above:'rgba(0,212,170,0.04)'} }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: {
+        legend:{ labels:{ color:'#52525B', font:{family:"'IBM Plex Mono'",size:10}, boxWidth:12 } },
+        tooltip:{ backgroundColor:'#18181B', borderColor:'#27272A', borderWidth:1,
+          titleColor:'#FAFAFA', bodyColor:'#A1A1AA', callbacks:{label: ctx=>'₹'+ctx.raw} }
+      },
+      scales: {
+        x:{ grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#52525B',font:{family:"'IBM Plex Mono'",size:10}} },
+        y:{ min:400, max:680, grid:{color:'rgba(255,255,255,0.04)'},
+          ticks:{color:'#52525B',font:{family:"'IBM Plex Mono'",size:10},callback:v=>'₹'+v} }
+      }
+    }
+  });
+}
+
+async function loadData() {
+  const btn = document.getElementById('refresh-btn');
+  btn.classList.add('spinning');
+  try {
+    allRows = await fetchSheetData();
+    renderAll();
+    const now = new Date().toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'});
+    document.getElementById('last-updated').textContent = 'Last updated: ' + now;
+    document.getElementById('live-status').textContent  = 'Live · sGTM active';
+  } catch(err) {
+    console.error(err);
+    document.getElementById('last-updated').textContent = 'Error loading — retrying in 60s';
+    document.getElementById('live-status').textContent  = 'Connection error';
+  } finally {
+    btn.classList.remove('spinning');
+  }
+}
+
+initCplChart();
+loadData();
+setInterval(loadData, REFRESH_MS);
+</script>
+</body>
+</html>
