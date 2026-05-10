@@ -336,6 +336,20 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 </div>
 
 <script>
+function maskEmail(email) {
+  if (!email || !email.includes('@')) return email;
+  const [user, domain] = email.split('@');
+  const visible = user.slice(0, 2);
+  const masked  = visible + '***@' + domain;
+  return masked;
+}
+
+function maskName(name) {
+  if (!name) return name;
+  const parts = name.trim().split(' ');
+  return parts[0] + (parts.length > 1 ? ' ' + parts[1][0] + '.' : '');
+}
+
 function openSidebar() {
   document.getElementById('sidebar').classList.add('open');
   document.getElementById('sidebar-overlay').classList.add('open');
@@ -477,7 +491,7 @@ function renderFeed(rows) {
   if (!recent.length) { el.innerHTML = '<div class="empty-state">No events yet</div>'; return; }
   el.innerHTML = recent.map(r => {
     const color = STATUS_COLORS[r.status]||'#52525B';
-    const label = r.name || r.email || 'Lead';
+    const label = r.name ? maskName(r.name) : r.email ? maskEmail(r.email) : 'Lead';
     const val = r.status==='SUCCESS' && r.value
       ? `<div class="feed-value" style="color:${color}">+₹${r.value.toLocaleString('en-IN')}</div>`
       : `<div class="feed-value" style="color:var(--text4);font-size:0.65rem">${r.status}</div>`;
