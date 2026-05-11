@@ -227,25 +227,22 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 
       <div class="kpi-grid">
         <div class="kpi teal">
-          <div class="kpi-label">Total Leads (period)</div>
-          <div class="kpi-value">1,255</div>
-          <div class="kpi-delta good">↑ +38%</div>
-          <div class="kpi-sub">vs 910 prior period</div>
+          <div class="kpi-label">Total Conversions</div>
+          <div class="kpi-value" id="kpi-leads">—</div>
+          <div class="kpi-sub" id="kpi-leads-sub">loading…</div>
         </div>
         <div class="kpi blue">
           <div class="kpi-label">Cost Per Lead</div>
-          <div class="kpi-value">₹468</div>
-          <div class="kpi-delta good">↓ −22%</div>
-          <div class="kpi-sub">was ₹599 prior period</div>
+          <div class="kpi-value" id="kpi-cpl">—</div>
+          <div class="kpi-sub" id="kpi-cpl-sub">loading…</div>
         </div>
         <div class="kpi purple">
           <div class="kpi-label">Ad Spend</div>
-          <div class="kpi-value">₹5.87L</div>
-          <div class="kpi-delta bad">↑ +8%</div>
-          <div class="kpi-sub">₹4L more budget</div>
+          <div class="kpi-value" id="kpi-spend">—</div>
+          <div class="kpi-sub" id="kpi-spend-sub">loading…</div>
         </div>
         <div class="kpi green">
-          <div class="kpi-label">Conversions Sent</div>
+          <div class="kpi-label">CRM Conversions Sent</div>
           <div class="kpi-value" id="kpi-success">—</div>
           <div class="kpi-sub" id="kpi-success-sub">loading…</div>
         </div>
@@ -528,18 +525,59 @@ function renderStageChart(rows) {
   });
 }
 
-function initCplChart() {
-  new Chart(document.getElementById('cplChart'), {
+// ── Google Ads API fetch ──────────────────────────────────────
+let gadsData = null;
+
+async function fetchGadsStats(days) {
+  const resp = await fetch(`/api/gads-stats?days=${days}&t=` + Date.now());
+  if (!resp.ok) throw new Error('gads-stats API error ' + resp.status);
+  const json = await resp.json();
+  if (!json.success) throw new Error(json.error);
+  return json.data;
+}
+
+function renderGadsKPIs(data) {
+  document.getElementById('kpi-leads').textContent =
+    data.total_conversions.toLocaleString('en-IN');
+  document.getElementById('kpi-leads-sub').textContent =
+    data.total_clicks.toLocaleString('en-IN') + ' clicks · ' + data.period_days + 'd';
+
+  document.getElementById('kpi-cpl').textContent = '₹' + data.cpl.toLocaleString('en-IN');
+  document.getElementById('kpi-cpl-sub').textContent =
+    data.qualified_leads + ' qualified leads';
+
+  document.getElementById('kpi-spend').textContent = '₹' + data.total_spend_lakh + 'L';
+  document.getElementById('kpi-spend-sub').textContent =
+    '₹' + data.total_spend.toLocaleString('en-IN') + ' total spend';
+}
+
+let cplChartInstance = null;
+
+function initCplChart(weeklyCpl) {
+  const labels = ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'];
+
+  // Split at first non-null in second half to show before/after
+  const splitAt = 5;
+  const before  = weeklyCpl
+    ? weeklyCpl.map((v,i) => i <= splitAt ? v : null)
+    : [620,615,628,610,605,null,null,null,null,null,null,null];
+  const after   = weeklyCpl
+    ? weeklyCpl.map((v,i) => i >= splitAt ? v : null)
+    : [null,null,null,null,null,590,560,530,510,488,472,468];
+
+  if (cplChartInstance) { cplChartInstance.destroy(); cplChartInstance = null; }
+
+  cplChartInstance = new Chart(document.getElementById('cplChart'), {
     type: 'line',
     data: {
-      labels: ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'],
+      labels,
       datasets: [
-        { label:'Before ScaleX', data:[620,615,628,610,605,null,null,null,null,null,null,null],
-          borderColor:'#52525B', borderWidth:2, borderDash:[4,3], pointBackgroundColor:'#52525B',
-          pointRadius:3, tension:0.3, spanGaps:false },
-        { label:'After ScaleX', data:[null,null,null,null,null,590,560,530,510,488,472,468],
-          borderColor:'#00D4AA', borderWidth:2, pointBackgroundColor:'#00D4AA',
-          pointRadius:3, tension:0.3, spanGaps:false,
+        { label:'Before ScaleX', data:before,
+          borderColor:'#52525B', borderWidth:2, borderDash:[4,3],
+          pointBackgroundColor:'#52525B', pointRadius:3, tension:0.3, spanGaps:false },
+        { label:'After ScaleX', data:after,
+          borderColor:'#00D4AA', borderWidth:2,
+          pointBackgroundColor:'#00D4AA', pointRadius:3, tension:0.3, spanGaps:false,
           fill:{target:'origin',above:'rgba(0,212,170,0.04)'} }
       ]
     },
@@ -548,11 +586,12 @@ function initCplChart() {
       plugins: {
         legend:{ labels:{ color:'#52525B', font:{family:"'IBM Plex Mono'",size:10}, boxWidth:12 } },
         tooltip:{ backgroundColor:'#18181B', borderColor:'#27272A', borderWidth:1,
-          titleColor:'#FAFAFA', bodyColor:'#A1A1AA', callbacks:{label: ctx=>'₹'+ctx.raw} }
+          titleColor:'#FAFAFA', bodyColor:'#A1A1AA',
+          callbacks:{label: ctx => ctx.raw ? '₹'+ctx.raw : 'N/A'} }
       },
       scales: {
         x:{ grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#52525B',font:{family:"'IBM Plex Mono'",size:10}} },
-        y:{ min:400, max:680, grid:{color:'rgba(255,255,255,0.04)'},
+        y:{ grid:{color:'rgba(255,255,255,0.04)'},
           ticks:{color:'#52525B',font:{family:"'IBM Plex Mono'",size:10},callback:v=>'₹'+v} }
       }
     }
@@ -563,8 +602,26 @@ async function loadData() {
   const btn = document.getElementById('refresh-btn');
   btn.classList.add('spinning');
   try {
-    allRows = await fetchSheetData();
-    renderAll();
+    // Fetch both sources in parallel
+    const [sheetRows, gads] = await Promise.allSettled([
+      fetchSheetData(),
+      fetchGadsStats(activeDays),
+    ]);
+
+    if (sheetRows.status === 'fulfilled') {
+      allRows = sheetRows.value;
+      renderAll();
+    }
+
+    if (gads.status === 'fulfilled') {
+      gadsData = gads.value;
+      renderGadsKPIs(gadsData);
+      initCplChart(gadsData.weekly_cpl);
+    } else {
+      console.warn('Google Ads fetch failed:', gads.reason);
+      initCplChart(null); // fallback to sample data
+    }
+
     const now = new Date().toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'});
     document.getElementById('last-updated').textContent = 'Last updated: ' + now;
     document.getElementById('live-status').textContent  = 'Live · sGTM active';
@@ -577,7 +634,7 @@ async function loadData() {
   }
 }
 
-initCplChart();
+initCplChart(null); // renders with sample data until gads loads
 loadData();
 setInterval(loadData, REFRESH_MS);
 </script>
