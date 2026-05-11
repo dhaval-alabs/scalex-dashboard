@@ -93,8 +93,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .camp-stat-val{font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#FAFAFA}
 .camp-stat-delta{font-size:0.68rem;font-weight:500;padding:1px 5px;border-radius:3px}
 .camp-stat-delta.good{color:var(--green);background:rgba(52,211,153,0.1)}
-.dash-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:0.7rem;color:var(--text4)}
-.footer-brand{font-family:'IBM Plex Mono',monospace;color:var(--teal);letter-spacing:0.08em}
+.dash-footer{padding:0.5rem 1.5rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:0.68rem;color:var(--text4)}
+.footer-brand{font-family:'IBM Plex Mono',monospace;color:var(--teal);letter-spacing:0.08em;font-size:0.68rem}
 /* Campaign table */
 .camp-table{width:100%;border-collapse:collapse;font-size:0.78rem}
 .camp-table th{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--text4);padding:0.5rem 0.75rem;text-align:right;border-bottom:1px solid var(--border);font-weight:500}
@@ -625,7 +625,7 @@ function renderCampaigns(campaigns, avgCpl) {
         <td style="color:#FAFAFA">₹${campaigns.reduce((s,c)=>s+c.spend,0).toLocaleString('en-IN')}</td>
         <td style="color:#FAFAFA">${campaigns.reduce((s,c)=>s+c.clicks,0).toLocaleString('en-IN')}</td>
         <td>—</td>
-        <td style="color:#FAFAFA">${campaigns.reduce((s,c)=>s+c.conversions,0)}</td>
+        <td style="color:#FAFAFA">${Math.round(campaigns.reduce((s,c)=>s+c.conversions,0)*10)/10}</td>
         <td>${cplPill(avgCpl)}</td>
       </tr>
     </tfoot>
