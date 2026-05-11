@@ -93,8 +93,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .camp-stat-val{font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#FAFAFA}
 .camp-stat-delta{font-size:0.68rem;font-weight:500;padding:1px 5px;border-radius:3px}
 .camp-stat-delta.good{color:var(--green);background:rgba(52,211,153,0.1)}
-.dash-footer{padding:0.5rem 1.5rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:0.68rem;color:var(--text4)}
-.footer-brand{font-family:'IBM Plex Mono',monospace;color:var(--teal);letter-spacing:0.08em;font-size:0.68rem}
+.dash-footer{padding:0.4rem 1.5rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:0.67rem;color:var(--text4);white-space:nowrap;overflow:hidden}
+.footer-brand{font-family:'IBM Plex Mono',monospace;color:var(--teal);letter-spacing:0.08em;font-size:0.67rem;flex-shrink:0;margin-left:1rem}
 /* Campaign table */
 .camp-table{width:100%;border-collapse:collapse;font-size:0.78rem}
 .camp-table th{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--text4);padding:0.5rem 0.75rem;text-align:right;border-bottom:1px solid var(--border);font-weight:500}
@@ -157,7 +157,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
   .bottom-grid{grid-template-columns:1fr;gap:8px}
 
   /* Footer */
-  .dash-footer{flex-direction:column;gap:0.35rem;text-align:center;padding:0.75rem 1rem}
+  .dash-footer{padding:0.4rem 1rem;white-space:nowrap;overflow:hidden}
+  .dash-footer > div:first-child{overflow:hidden;text-overflow:ellipsis}
 }
 
 @media(max-width:400px){
