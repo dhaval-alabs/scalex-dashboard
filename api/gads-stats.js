@@ -1,9 +1,8 @@
 // api/gads-stats.js
 // Vercel serverless function — fetches live Google Ads stats
-// Returns: CPL, spend, leads, cost_per_enrolled for last N days
+// v2 — fixed API version v17→v23, added campaign breakdown
 
 export default async function handler(req, res) {
-  // CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(204).end();
@@ -16,12 +15,11 @@ export default async function handler(req, res) {
     res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=600');
     return res.status(200).json({ success: true, data: stats });
   } catch (err) {
-    console.error('gads-stats error:', err);
+    console.error('gads-stats error:', err.message);
     return res.status(500).json({ success: false, error: err.message });
   }
 }
 
-// ── OAuth token ───────────────────────────────────────────────
 async function getAccessToken() {
   const resp = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
@@ -34,65 +32,55 @@ async function getAccessToken() {
     }),
   });
   const data = await resp.json();
-  if (!data.access_token) throw new Error('Token exchange failed: ' + JSON.stringify(data));
+  if (!data.access_token) throw new Error('Token exchange failed: ' + JSON.stringify(data).slice(0,200));
   return data.access_token;
 }
 
-// ── Google Ads query ──────────────────────────────────────────
 async function fetchGadsStats(token, days) {
-  const customerId  = process.env.CUSTOMER_ID;
-  const mccId       = process.env.MCC_ID;
-  const devToken    = process.env.DEVELOPER_TOKEN;
+  const customerId = process.env.CUSTOMER_ID;
+  const mccId      = process.env.MCC_ID;
+  const devToken   = process.env.DEVELOPER_TOKEN;
 
-  // Date range: last N days
   const endDate   = new Date();
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
-  const fmt = d => d.toISOString().split('T')[0].replace(/-/g, '-');
+  const fmt = d => d.toISOString().split('T')[0];
 
-  // Query 1: Overall campaign stats (spend, clicks, conversions)
-  const campaignQuery = `
-    SELECT
-      metrics.cost_micros,
-      metrics.clicks,
-      metrics.conversions,
-      metrics.conversions_value,
-      segments.date
+  const overallQuery = `
+    SELECT metrics.cost_micros, metrics.clicks, metrics.conversions, segments.date
     FROM campaign
     WHERE segments.date BETWEEN '${fmt(startDate)}' AND '${fmt(endDate)}'
-      AND campaign.status = 'ENABLED'
+    AND campaign.status = 'ENABLED'
   `;
 
-  // Query 2: Conversion action breakdown
+  const campaignQuery = `
+    SELECT campaign.id, campaign.name, metrics.cost_micros, metrics.clicks, metrics.conversions, metrics.impressions
+    FROM campaign
+    WHERE segments.date BETWEEN '${fmt(startDate)}' AND '${fmt(endDate)}'
+    AND campaign.status = 'ENABLED'
+  `;
+
   const convQuery = `
-    SELECT
-      conversion_action.name,
-      conversion_action.id,
-      metrics.all_conversions,
-      metrics.all_conversions_value
+    SELECT conversion_action.name, metrics.all_conversions, metrics.all_conversions_value
     FROM conversion_action
-    WHERE conversion_action.name IN (
-      'crm_webhook_qualified_lead',
-      'crm_webhook_converted_lead'
-    )
+    WHERE conversion_action.name IN ('crm_webhook_qualified_lead','crm_webhook_converted_lead')
   `;
 
-  const [campaignResp, convResp] = await Promise.all([
+  const [overallResp, campaignResp, convResp] = await Promise.all([
+    gadsSearch(overallQuery,  customerId, mccId, devToken, token),
     gadsSearch(campaignQuery, customerId, mccId, devToken, token),
-    gadsSearch(convQuery,    customerId, mccId, devToken, token),
+    gadsSearch(convQuery,     customerId, mccId, devToken, token),
   ]);
 
-  // Process campaign stats
+  // Overall totals
   let totalSpendMicros = 0, totalClicks = 0, totalConversions = 0;
-
   const dailyData = {};
-  (campaignResp[0]?.results || []).forEach(r => {
+  (overallResp[0]?.results || []).forEach(r => {
     const date = r.segments?.date || '';
     const cost = parseInt(r.metrics?.costMicros || 0);
     totalSpendMicros += cost;
     totalClicks      += parseInt(r.metrics?.clicks || 0);
     totalConversions += parseFloat(r.metrics?.conversions || 0);
-
     if (date) {
       if (!dailyData[date]) dailyData[date] = { spend: 0, conversions: 0 };
       dailyData[date].spend       += cost / 1_000_000;
@@ -103,23 +91,39 @@ async function fetchGadsStats(token, days) {
   const totalSpend = totalSpendMicros / 1_000_000;
   const cpl        = totalConversions > 0 ? Math.round(totalSpend / totalConversions) : 0;
 
-  // Process conversion actions
-  let qualifiedLeads = 0, enrolledLeads = 0,
-      qualifiedValue = 0, enrolledValue = 0;
-
-  (convResp[0]?.results || []).forEach(r => {
-    const name = r.conversionAction?.name || '';
-    const ct   = parseFloat(r.metrics?.allConversions || 0);
-    const cv   = parseFloat(r.metrics?.allConversionsValue || 0);
-    if (name === 'crm_webhook_qualified_lead') { qualifiedLeads = ct; qualifiedValue = cv; }
-    if (name === 'crm_webhook_converted_lead') { enrolledLeads  = ct; enrolledValue  = cv; }
+  // Campaign breakdown — aggregate across days
+  const campMap = {};
+  (campaignResp[0]?.results || []).forEach(r => {
+    const id   = r.campaign?.id || 'unknown';
+    const name = r.campaign?.name || 'Unknown';
+    if (!campMap[id]) campMap[id] = { id, name, spend: 0, clicks: 0, conversions: 0, impressions: 0 };
+    campMap[id].spend       += parseInt(r.metrics?.costMicros || 0) / 1_000_000;
+    campMap[id].clicks      += parseInt(r.metrics?.clicks || 0);
+    campMap[id].conversions += parseFloat(r.metrics?.conversions || 0);
+    campMap[id].impressions += parseInt(r.metrics?.impressions || 0);
   });
 
-  const costPerEnrolled = enrolledLeads > 0
-    ? Math.round(totalSpend / enrolledLeads) : 0;
+  const campaigns = Object.values(campMap)
+    .filter(c => c.spend > 10) // filter out tiny test campaigns
+    .sort((a, b) => b.spend - a.spend)
+    .map(c => ({
+      id:          c.id,
+      name:        c.name,
+      spend:       Math.round(c.spend),
+      spend_lakh:  (c.spend / 100000).toFixed(2),
+      clicks:      c.clicks,
+      conversions: Math.round(c.conversions * 10) / 10,
+      cpl:         c.conversions > 0 ? Math.round(c.spend / c.conversions) : null,
+      ctr:         c.impressions > 0 ? ((c.clicks / c.impressions) * 100).toFixed(2) : '0.00',
+    }));
 
-  // Weekly CPL for trend chart (last 12 weeks)
-  const weeklyCpl = buildWeeklyCpl(dailyData);
+  // Conversion actions
+  let qualifiedLeads = 0, enrolledLeads = 0;
+  (convResp[0]?.results || []).forEach(r => {
+    const name = r.conversionAction?.name || '';
+    if (name === 'crm_webhook_qualified_lead') qualifiedLeads = parseFloat(r.metrics?.allConversions || 0);
+    if (name === 'crm_webhook_converted_lead') enrolledLeads  = parseFloat(r.metrics?.allConversions || 0);
+  });
 
   return {
     period_days:       days,
@@ -127,59 +131,48 @@ async function fetchGadsStats(token, days) {
     total_spend_lakh:  (totalSpend / 100000).toFixed(2),
     total_clicks:      totalClicks,
     total_conversions: Math.round(totalConversions),
-    cpl:               cpl,
+    cpl,
     qualified_leads:   Math.round(qualifiedLeads),
     enrolled_leads:    Math.round(enrolledLeads),
-    qualified_value:   Math.round(qualifiedValue),
-    enrolled_value:    Math.round(enrolledValue),
-    cost_per_enrolled: costPerEnrolled,
-    weekly_cpl:        weeklyCpl,
+    cost_per_enrolled: enrolledLeads > 0 ? Math.round(totalSpend / enrolledLeads) : 0,
+    campaigns,
+    weekly_cpl:        buildWeeklyCpl(dailyData),
     fetched_at:        new Date().toISOString(),
   };
 }
 
-// ── Google Ads search stream ──────────────────────────────────
 async function gadsSearch(query, customerId, mccId, devToken, token) {
   const resp = await fetch(
-    `https://googleads.googleapis.com/v17/customers/${customerId}/googleAds:searchStream`,
+    `https://googleads.googleapis.com/v23/customers/${customerId}/googleAds:searchStream`,
     {
-      method:  'POST',
+      method: 'POST',
       headers: {
         'Authorization':     `Bearer ${token}`,
         'developer-token':   devToken,
         'login-customer-id': mccId,
         'Content-Type':      'application/json',
       },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify({ query: query.trim() }),
     }
   );
-  if (!resp.ok) {
-    const txt = await resp.text();
-    throw new Error(`Google Ads API ${resp.status}: ${txt.slice(0, 300)}`);
-  }
-  return resp.json();
+  const text = await resp.text();
+  if (!resp.ok) throw new Error(`GAds API ${resp.status}: ${text.slice(0,400)}`);
+  try { return JSON.parse(text); }
+  catch { return text.trim().split('\n').filter(Boolean).map(l => { try { return JSON.parse(l); } catch { return {}; } }); }
 }
 
-// ── Weekly CPL builder ────────────────────────────────────────
 function buildWeeklyCpl(dailyData) {
   const weeks = [];
   const today = new Date();
-
   for (let w = 11; w >= 0; w--) {
-    const weekEnd   = new Date(today);
-    weekEnd.setDate(weekEnd.getDate() - w * 7);
-    const weekStart = new Date(weekEnd);
-    weekStart.setDate(weekStart.getDate() - 6);
-
-    let spend = 0, conversions = 0;
+    const weekEnd   = new Date(today); weekEnd.setDate(weekEnd.getDate() - w * 7);
+    const weekStart = new Date(weekEnd); weekStart.setDate(weekStart.getDate() - 6);
+    let spend = 0, conv = 0;
     for (let d = new Date(weekStart); d <= weekEnd; d.setDate(d.getDate() + 1)) {
       const key = d.toISOString().split('T')[0];
-      if (dailyData[key]) {
-        spend       += dailyData[key].spend;
-        conversions += dailyData[key].conversions;
-      }
+      if (dailyData[key]) { spend += dailyData[key].spend; conv += dailyData[key].conversions; }
     }
-    weeks.push(conversions > 0 ? Math.round(spend / conversions) : null);
+    weeks.push(conv > 0 ? Math.round(spend / conv) : null);
   }
   return weeks;
 }
