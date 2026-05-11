@@ -95,7 +95,19 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .camp-stat-delta.good{color:var(--green);background:rgba(52,211,153,0.1)}
 .dash-footer{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;font-size:0.7rem;color:var(--text4)}
 .footer-brand{font-family:'IBM Plex Mono',monospace;color:var(--teal);letter-spacing:0.08em}
-.empty-state{text-align:center;padding:2rem;color:var(--text4);font-size:0.8rem}
+/* Campaign table */
+.camp-table{width:100%;border-collapse:collapse;font-size:0.78rem}
+.camp-table th{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--text4);padding:0.5rem 0.75rem;text-align:right;border-bottom:1px solid var(--border);font-weight:500}
+.camp-table th:first-child{text-align:left}
+.camp-table td{padding:0.6rem 0.75rem;text-align:right;border-bottom:1px solid var(--border);color:var(--text2);font-family:'IBM Plex Mono',monospace;font-size:0.75rem}
+.camp-table td:first-child{text-align:left;color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:0.78rem;max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.camp-table tr:last-child td{border-bottom:none}
+.camp-table tr:hover td{background:var(--bg3)}
+.cpl-pill{display:inline-block;padding:1px 7px;border-radius:3px;font-size:0.68rem;font-weight:600}
+.cpl-good{background:rgba(52,211,153,0.12);color:var(--green)}
+.cpl-mid{background:rgba(251,191,36,0.12);color:var(--amber)}
+.cpl-bad{background:rgba(239,68,68,0.1);color:var(--red)}
+
 
 /* ── Mobile hamburger ── */
 .hamburger{display:none;flex-direction:column;gap:4px;cursor:pointer;padding:4px;background:transparent;border:none}
@@ -325,7 +337,19 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       </div>
     </div>
 
-    <div class="dash-footer">
+      <!-- Campaign breakdown — live from Google Ads -->
+      <div class="chart-card" style="margin-bottom:1.25rem">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">All Campaigns — Performance Breakdown</div>
+            <div class="chart-sub" id="camp-table-sub">Live · Google Ads API · sorted by spend</div>
+          </div>
+          <div class="live-tag"><div class="live-dot"></div>live</div>
+        </div>
+        <div id="camp-table-wrap">
+          <div class="empty-state">Loading campaigns…</div>
+        </div>
+      </div>
       <div>Live data: Google Sheets log · sGTM (GTM-NL8L86MW) · Apps Script v7 · LSQ CRM · auto-refreshes every 60s</div>
       <div class="footer-brand">powered by scaletrix.ai</div>
     </div>
@@ -549,6 +573,64 @@ function renderGadsKPIs(data) {
   document.getElementById('kpi-spend').textContent = '₹' + data.total_spend_lakh + 'L';
   document.getElementById('kpi-spend-sub').textContent =
     '₹' + data.total_spend.toLocaleString('en-IN') + ' total spend';
+
+  if (data.campaigns) renderCampaigns(data.campaigns, data.cpl);
+}
+
+function renderCampaigns(campaigns, avgCpl) {
+  const wrap = document.getElementById('camp-table-wrap');
+  const sub  = document.getElementById('camp-table-sub');
+
+  if (!campaigns || !campaigns.length) {
+    wrap.innerHTML = '<div class="empty-state">No campaign data available</div>';
+    return;
+  }
+
+  sub.textContent = `Live · Google Ads API · ${campaigns.length} active campaigns · sorted by spend`;
+
+  // CPL color: green if <avg, amber if <2x avg, red if >2x avg
+  function cplPill(cpl) {
+    if (!cpl) return '<span style="color:var(--text4)">—</span>';
+    const cls = cpl < avgCpl ? 'cpl-good' : cpl < avgCpl * 1.8 ? 'cpl-mid' : 'cpl-bad';
+    return `<span class="cpl-pill ${cls}">₹${cpl.toLocaleString('en-IN')}</span>`;
+  }
+
+  wrap.innerHTML = `
+  <div style="overflow-x:auto">
+  <table class="camp-table">
+    <thead>
+      <tr>
+        <th>Campaign</th>
+        <th>Spend</th>
+        <th>Clicks</th>
+        <th>CTR</th>
+        <th>Conversions</th>
+        <th>CPL</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${campaigns.map(c => `
+      <tr>
+        <td title="${c.name}">${c.name}</td>
+        <td>₹${c.spend.toLocaleString('en-IN')}</td>
+        <td>${c.clicks.toLocaleString('en-IN')}</td>
+        <td>${c.ctr}%</td>
+        <td>${c.conversions}</td>
+        <td>${cplPill(c.cpl)}</td>
+      </tr>`).join('')}
+    </tbody>
+    <tfoot>
+      <tr style="border-top:2px solid var(--border2)">
+        <td style="color:var(--text3);font-family:'IBM Plex Sans',sans-serif">Total / Average</td>
+        <td style="color:#FAFAFA">₹${campaigns.reduce((s,c)=>s+c.spend,0).toLocaleString('en-IN')}</td>
+        <td style="color:#FAFAFA">${campaigns.reduce((s,c)=>s+c.clicks,0).toLocaleString('en-IN')}</td>
+        <td>—</td>
+        <td style="color:#FAFAFA">${campaigns.reduce((s,c)=>s+c.conversions,0)}</td>
+        <td>${cplPill(avgCpl)}</td>
+      </tr>
+    </tfoot>
+  </table>
+  </div>`;
 }
 
 let cplChartInstance = null;
