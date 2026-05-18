@@ -1,6 +1,6 @@
 // api/gads-stats.js
 // Vercel serverless function — fetches live Google Ads stats
-// v2 — fixed API version v17→v23, added campaign breakdown
+// v3 — added comparison period for campaign table (prev period columns)
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -11,7 +11,25 @@ export default async function handler(req, res) {
 
   try {
     const token = await getAccessToken();
-    const stats = await fetchGadsStats(token, days);
+    // Fetch current + prior period in parallel
+    const [stats, prevStats] = await Promise.all([
+      fetchGadsStats(token, days, 0),
+      fetchGadsStats(token, days, days), // offset by one full period
+    ]);
+    // Merge prev campaign data into current
+    const prevMap = {};
+    (prevStats.campaigns || []).forEach(c => { prevMap[c.id] = c; });
+    stats.campaigns = stats.campaigns.map(c => ({
+      ...c,
+      prev_spend:       prevMap[c.id]?.spend       || null,
+      prev_conversions: prevMap[c.id]?.conversions || null,
+      prev_cpl:         prevMap[c.id]?.cpl         || null,
+      prev_clicks:      prevMap[c.id]?.clicks      || null,
+    }));
+    stats.prev_cpl   = prevStats.cpl;
+    stats.prev_spend = prevStats.total_spend;
+    stats.prev_total_conversions = prevStats.total_conversions;
+
     res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=600');
     return res.status(200).json({ success: true, data: stats });
   } catch (err) {
@@ -36,13 +54,15 @@ async function getAccessToken() {
   return data.access_token;
 }
 
-async function fetchGadsStats(token, days) {
+// offsetDays=0 → current period, offsetDays=days → prior period
+async function fetchGadsStats(token, days, offsetDays) {
   const customerId = process.env.CUSTOMER_ID;
   const mccId      = process.env.MCC_ID;
   const devToken   = process.env.DEVELOPER_TOKEN;
 
   const endDate   = new Date();
-  const startDate = new Date();
+  endDate.setDate(endDate.getDate() - offsetDays);
+  const startDate = new Date(endDate);
   startDate.setDate(startDate.getDate() - days);
   const fmt = d => d.toISOString().split('T')[0];
 
@@ -91,7 +111,7 @@ async function fetchGadsStats(token, days) {
   const totalSpend = totalSpendMicros / 1_000_000;
   const cpl        = totalConversions > 0 ? Math.round(totalSpend / totalConversions) : 0;
 
-  // Campaign breakdown — aggregate across days
+  // Campaign breakdown
   const campMap = {};
   (campaignResp[0]?.results || []).forEach(r => {
     const id   = r.campaign?.id || 'unknown';
@@ -104,7 +124,7 @@ async function fetchGadsStats(token, days) {
   });
 
   const campaigns = Object.values(campMap)
-    .filter(c => c.spend > 10) // filter out tiny test campaigns
+    .filter(c => c.spend > 10)
     .sort((a, b) => b.spend - a.spend)
     .map(c => ({
       id:          c.id,
@@ -117,7 +137,6 @@ async function fetchGadsStats(token, days) {
       ctr:         c.impressions > 0 ? ((c.clicks / c.impressions) * 100).toFixed(2) : '0.00',
     }));
 
-  // Conversion actions
   let qualifiedLeads = 0, enrolledLeads = 0;
   (convResp[0]?.results || []).forEach(r => {
     const name = r.conversionAction?.name || '';
@@ -136,7 +155,7 @@ async function fetchGadsStats(token, days) {
     enrolled_leads:    Math.round(enrolledLeads),
     cost_per_enrolled: enrolledLeads > 0 ? Math.round(totalSpend / enrolledLeads) : 0,
     campaigns,
-    weekly_cpl:        buildWeeklyCpl(dailyData),
+    weekly_cpl:        offsetDays === 0 ? buildWeeklyCpl(dailyData) : [],
     fetched_at:        new Date().toISOString(),
   };
 }
