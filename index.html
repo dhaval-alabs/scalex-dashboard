@@ -69,7 +69,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .chart-sub{font-size:0.72rem;color:var(--text4);margin-top:3px}
 .chart-badge{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;padding:2px 7px;border-radius:3px;border:1px solid var(--border2);color:var(--text3)}
 .live-tag{display:flex;align-items:center;gap:4px;font-size:0.68rem;color:var(--green);font-family:'IBM Plex Mono',monospace}
-.bottom-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:1.25rem}
+.bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.25rem}
 .funnel-stage{display:flex;align-items:center;gap:0.75rem;padding:0.6rem 0;border-bottom:1px solid var(--border)}
 .funnel-stage:last-child{border-bottom:none}
 .stage-name{font-size:0.78rem;color:var(--text2);width:110px;flex-shrink:0}
@@ -316,29 +316,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
           <div id="feed-list"><div class="empty-state">Loading…</div></div>
         </div>
 
-        <div class="campaign-card">
-          <div class="camp-header">Bangalore Campaign · Spotlight</div>
-          <div class="camp-stat">
-            <span class="camp-stat-label">Leads generated</span>
-            <span style="display:flex;align-items:center;gap:6px"><span class="camp-stat-val">345</span><span class="camp-stat-delta good">+255%</span></span>
-          </div>
-          <div class="camp-stat">
-            <span class="camp-stat-label">Cost per lead</span>
-            <span style="display:flex;align-items:center;gap:6px"><span class="camp-stat-val">₹612</span><span class="camp-stat-delta good">−58%</span></span>
-          </div>
-          <div class="camp-stat"><span class="camp-stat-label">Prior CPL</span><span class="camp-stat-val" style="color:var(--text3)">₹1,450</span></div>
-          <div class="camp-stat"><span class="camp-stat-label">Prior leads</span><span class="camp-stat-val" style="color:var(--text3)">98</span></div>
-          <div class="camp-stat"><span class="camp-stat-label">Tracking</span><span class="camp-stat-val" style="font-size:0.72rem;color:var(--teal)">Server-side · sGTM</span></div>
-          <div class="camp-stat">
-            <span class="camp-stat-label">GCLID match rate</span>
-            <span style="display:flex;align-items:center;gap:6px"><span class="camp-stat-val">94.2%</span><span class="camp-stat-delta good">+31pp</span></span>
-          </div>
-          <div style="margin-top:1rem;padding:0.75rem;background:var(--teal-dim);border-radius:6px;border:1px solid rgba(0,212,170,0.15)">
-            <div style="font-size:0.7rem;color:var(--teal);font-family:'IBM Plex Mono',monospace;margin-bottom:0.35rem">INCREMENTAL IMPACT</div>
-            <div style="font-size:1.1rem;font-family:'IBM Plex Mono',monospace;font-weight:600;color:#FAFAFA">+247 more leads</div>
-            <div style="font-size:0.72rem;color:var(--text3);margin-top:2px">same budget as prior period</div>
-          </div>
-        </div>
+
       </div>
     </div>
 
@@ -355,6 +333,44 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
           <div class="empty-state">Loading campaigns…</div>
         </div>
       </div>
+
+      <!-- ── Pipeline Health ── -->
+      <div style="display:flex;align-items:center;gap:0.75rem;margin:1.5rem 0 1rem">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text4);white-space:nowrap">Pipeline Health</span>
+        <div style="flex:1;height:1px;background:var(--border)"></div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:0.58rem;padding:2px 6px;border-radius:3px;border:1px solid var(--border2);color:var(--text4)">v10 · live</span>
+      </div>
+
+      <!-- EC Recovery callout -->
+      <div id="ec-callout" style="display:none;background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--purple);border-radius:0 var(--radius2) var(--radius2) 0;padding:0.85rem 1rem;margin-bottom:1.25rem">
+        <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+          <div id="ec-rate" style="font-family:'IBM Plex Mono',monospace;font-size:2rem;font-weight:600;color:var(--purple);line-height:1;flex-shrink:0">—</div>
+          <div>
+            <div style="font-size:0.82rem;font-weight:600;color:#FAFAFA">EC Recovery Rate</div>
+            <div style="font-size:0.7rem;color:var(--text3);margin-top:2px" id="ec-sub">Conversions recovered via Enhanced Conversions (no GCLID, matched by email/phone)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pipeline tiles -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem" id="pipeline-tiles">
+        <div class="chart-card">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text4);margin-bottom:0.4rem">Adj. Queue Depth</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:1.3rem;font-weight:600;color:#FAFAFA" id="ph-queue">—</div>
+          <div style="font-size:0.65rem;color:var(--text4);margin-top:0.3rem">pending restatements</div>
+        </div>
+        <div class="chart-card">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text4);margin-bottom:0.4rem">Batch Run</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:1rem;font-weight:600;color:#FAFAFA" id="ph-batch">—</div>
+          <div style="font-size:0.65rem;color:var(--text4);margin-top:0.3rem" id="ph-batch-sub">loading…</div>
+        </div>
+        <div class="chart-card">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text4);margin-bottom:0.4rem">Pipeline Errors (24h)</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:1.3rem;font-weight:600;color:#FAFAFA" id="ph-errors">—</div>
+          <div style="font-size:0.65rem;color:var(--text4);margin-top:0.3rem" id="ph-errors-sub">loading…</div>
+        </div>
+      </div>
+
       <div class="dash-footer">
         <div class="footer-left">Live data: Google Sheets log · sGTM (GTM-NL8L86MW) · Apps Script v7 · LSQ CRM · auto-refreshes every 60s</div>
         <div class="footer-brand">powered by scaletrix.ai</div>
@@ -449,6 +465,7 @@ function renderAll() {
   renderFunnel(rows);
   renderFeed(allRows);
   renderStageChart(rows);
+  renderPipelineHealth(allRows);
 }
 
 function renderKPIs(rows) {
@@ -662,6 +679,51 @@ function renderCampaigns(campaigns, avgCpl) {
 }
 
 let cplChartInstance = null;
+
+
+// ── Pipeline Health ──────────────────────────────────────────
+function renderPipelineHealth(rows) {
+  // EC Recovery Rate: SUCCESS_EC_ONLY / (SUCCESS + SUCCESS_EC_ONLY)
+  const period = filterByPeriod(rows, activeDays);
+  const success     = period.filter(r => r.status === 'SUCCESS').length;
+  const ecOnly      = period.filter(r => r.status === 'SUCCESS_EC_ONLY').length;
+  const total       = success + ecOnly;
+  const ecRate      = total > 0 ? Math.round((ecOnly / total) * 100) : 0;
+
+  const ecCallout = document.getElementById('ec-callout');
+  if (total > 0) {
+    document.getElementById('ec-rate').textContent = ecRate + '%';
+    document.getElementById('ec-sub').textContent =
+      ecOnly + ' of ' + total + ' conversions recovered via EC · would have been lost without Enhanced Conversions for Leads';
+    ecCallout.style.display = 'block';
+  }
+
+  // Pipeline errors last 24h
+  const cutoff24 = new Date(Date.now() - 86400000);
+  const recent = rows.filter(r => new Date(r.timestamp) >= cutoff24);
+  const errorStatuses = ['SKIP_UNKNOWN_STAGE','FIRESTORE_FAIL','HTTP_503','GADS_PARTIAL_FAIL'];
+  const errorCount = recent.filter(r => errorStatuses.includes(r.status)).length;
+  const errEl = document.getElementById('ph-errors');
+  const errSub = document.getElementById('ph-errors-sub');
+  errEl.textContent = errorCount;
+  errEl.style.color = errorCount > 0 ? 'var(--amber)' : 'var(--green)';
+  errSub.textContent = errorCount > 0 ? 'review log sheet' : 'all clear';
+
+  // Batch + Queue tiles — loaded from BatchLog sheet if available
+  // For now show placeholder from log analysis
+  const ph_queue = document.getElementById('ph-queue');
+  const adjCount = rows.filter(r => r.status === 'ADJUSTMENT_QUEUED').length;
+  ph_queue.textContent = adjCount;
+
+  const ph_batch = document.getElementById('ph-batch');
+  const ph_batch_sub = document.getElementById('ph-batch-sub');
+  if (rows.length > 0) {
+    const lastRow = [...rows].sort((a,b) => new Date(b.timestamp)-new Date(a.timestamp))[0];
+    const lastTime = new Date(lastRow.timestamp);
+    ph_batch.textContent = lastTime.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    ph_batch_sub.textContent = lastTime.toLocaleDateString('en-IN',{day:'numeric',month:'short'}) + ' · last event';
+  }
+}
 
 function initCplChart(weeklyCpl) {
   const labels = ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'];
