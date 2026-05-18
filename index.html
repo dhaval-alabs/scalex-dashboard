@@ -108,6 +108,10 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .cpl-good{background:rgba(52,211,153,0.12);color:var(--green)}
 .cpl-mid{background:rgba(251,191,36,0.12);color:var(--amber)}
 .cpl-bad{background:rgba(239,68,68,0.1);color:var(--red)}
+.delta-good{color:var(--green);font-size:0.65rem}
+.delta-bad{color:var(--red);font-size:0.65rem}
+.delta-neutral{color:var(--text4);font-size:0.65rem}
+.prev-val{color:var(--text4);font-size:0.68rem;display:block;margin-top:1px}
 
 
 /* ── Mobile hamburger ── */
@@ -589,13 +593,31 @@ function renderCampaigns(campaigns, avgCpl) {
     return;
   }
 
-  sub.textContent = `Live · Google Ads API · ${campaigns.length} active campaigns · sorted by spend`;
+  const hasPrev = campaigns.some(c => c.prev_cpl !== null && c.prev_cpl !== undefined);
+  sub.textContent = `Live · Google Ads API · ${campaigns.length} active campaigns · sorted by spend` +
+    (hasPrev ? ' · vs prior period' : '');
 
-  // CPL color: green if <avg, amber if <2x avg, red if >2x avg
   function cplPill(cpl) {
     if (!cpl) return '<span style="color:var(--text4)">—</span>';
     const cls = cpl < avgCpl ? 'cpl-good' : cpl < avgCpl * 1.8 ? 'cpl-mid' : 'cpl-bad';
     return `<span class="cpl-pill ${cls}">₹${cpl.toLocaleString('en-IN')}</span>`;
+  }
+
+  function delta(curr, prev, prefix) {
+    if (prev === null || prev === undefined || prev === 0) return '';
+    const pct = Math.round(((curr - prev) / prev) * 100);
+    if (pct === 0) return `<span class="delta-neutral">—</span>`;
+    // For CPL, lower is better (green = negative pct)
+    const isCpl = prefix === '₹';
+    const good = isCpl ? pct < 0 : pct > 0;
+    const cls = good ? 'delta-good' : 'delta-bad';
+    const arrow = pct > 0 ? '↑' : '↓';
+    return `<span class="${cls}">${arrow}${Math.abs(pct)}%</span>`;
+  }
+
+  function prevCell(curr, prev, prefix) {
+    if (prev === null || prev === undefined) return '';
+    return `<span class="prev-val">${prefix}${prev.toLocaleString('en-IN')} prev</span>`;
   }
 
   wrap.innerHTML = `
@@ -604,22 +626,25 @@ function renderCampaigns(campaigns, avgCpl) {
     <thead>
       <tr>
         <th>Campaign</th>
-        <th>Spend</th>
+        <th>Spend${hasPrev?' · vs prev':''}</th>
         <th>Clicks</th>
         <th>CTR</th>
-        <th>Conversions</th>
-        <th>CPL</th>
+        <th>Conv.${hasPrev?' · vs prev':''}</th>
+        <th>CPL${hasPrev?' · vs prev':''}</th>
       </tr>
     </thead>
     <tbody>
       ${campaigns.map(c => `
       <tr>
         <td title="${c.name}">${c.name}</td>
-        <td>₹${c.spend.toLocaleString('en-IN')}</td>
+        <td>₹${c.spend.toLocaleString('en-IN')} ${delta(c.spend, c.prev_spend, '₹')}
+          ${prevCell(c.spend, c.prev_spend, '₹')}</td>
         <td>${c.clicks.toLocaleString('en-IN')}</td>
         <td>${c.ctr}%</td>
-        <td>${c.conversions}</td>
-        <td>${cplPill(c.cpl)}</td>
+        <td>${c.conversions} ${delta(c.conversions, c.prev_conversions, '')}
+          ${prevCell(c.conversions, c.prev_conversions, '')}</td>
+        <td>${cplPill(c.cpl)} ${delta(c.cpl, c.prev_cpl, '₹')}
+          ${prevCell(c.cpl, c.prev_cpl, '₹')}</td>
       </tr>`).join('')}
     </tbody>
     <tfoot>
