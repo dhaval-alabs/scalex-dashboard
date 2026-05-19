@@ -424,7 +424,7 @@ function closeSidebar() {
 }
 
 const CSV_URL       = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSbEGvqdlB_8anAt8_yNmOtpg0PeGBkdBvs0aPcw651qIFxJunBWHtOYeiON_i1Z5DnAzpM5IHKunTw/pub?gid=1418087288&single=true&output=csv';
-const BATCHLOG_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSbEGvqdlB_8anAt8_yNmOtpg0PeGBkdBvs0aPcw651qIFxJunBWHtOYeiON_i1Z5DnAzpM5IHKunTw/pub?gid=745012896&single=true&output=csv';
+const BATCHLOG_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSbEGvqdlB_8anAt8_yNmOtpg0PeGBkdBvs0aPcw651qIFxJunBWHtOYeiON_i1Z5DnAzpM5IHKunTw/pub?gid=745012896&single=true&output=csv&headers=false';
 const FIRESTORE_URL = 'https://firestore.googleapis.com/v1/projects/analytixlabs-ads/databases/default/documents/clients/4064995850/adjustment_queue?pageSize=1000';
 const REFRESH_MS = 60000;
 
@@ -553,6 +553,14 @@ function renderKPIs(rows) {
   document.getElementById('kpi-match-nonform-sub').textContent = nonFormWithGclid.length + ' of ' + nonFormLeads.length + ' call/walk-in leads';
 }
 
+// Only meaningful pipeline stages — filters out noise, test stages, internal categories
+const STAGE_SHOW = new Set([
+  'New Lead','Future Interest','FutureInterest','ML-Enquiry','Enquiry',
+  'Hot','Warm','Re-Enquiry','ReEnquiry','re-enquiry','re enquiry',
+  'Priority-Call','Enrolled','Disqualified','RNR','Not Reachable',
+  'Cold','Junk','Not Interested'
+]);
+
 const STAGE_CONFIG = [
   { key:'New Lead',        color:'#00D4AA' },
   { key:'Future Interest', color:'#4C9FFF' },
@@ -563,11 +571,16 @@ const STAGE_CONFIG = [
   { key:'Warm',            color:'#FBBF24' },
   { key:'Re-Enquiry',      color:'#FF6B4A' },
   { key:'ReEnquiry',       color:'#FF6B4A' },
+  { key:'re-enquiry',      color:'#FF6B4A' },
+  { key:'re enquiry',      color:'#FF6B4A' },
   { key:'Priority-Call',   color:'#FB923C' },
   { key:'Enrolled',        color:'#34D399' },
   { key:'Disqualified',    color:'#52525B' },
   { key:'RNR',             color:'#3F3F46' },
   { key:'Not Reachable',   color:'#3F3F46' },
+  { key:'Cold',            color:'#27272A' },
+  { key:'Junk',            color:'#27272A' },
+  { key:'Not Interested',  color:'#27272A' },
 ];
 
 function renderFunnel(rows) {
@@ -575,10 +588,8 @@ function renderFunnel(rows) {
   const counts = {};
   rows.forEach(r => { if (r.newStage) counts[r.newStage] = (counts[r.newStage]||0) + 1; });
   const maxCount = Math.max(...Object.values(counts), 1);
-  const stages = STAGE_CONFIG.filter(s => counts[s.key] > 0);
-  Object.keys(counts).forEach(k => {
-    if (!STAGE_CONFIG.find(s => s.key === k)) stages.push({ key:k, color:'#3F3F46' });
-  });
+  // Only show stages in STAGE_SHOW — filter out test/internal/noise stages
+  const stages = STAGE_CONFIG.filter(s => counts[s.key] > 0 && STAGE_SHOW.has(s.key));
   if (!stages.length) { el.innerHTML = '<div class="empty-state">No data in this period</div>'; return; }
   el.innerHTML = stages.map(s => {
     const count = counts[s.key]||0;
@@ -608,14 +619,14 @@ function renderFeed(rows) {
   if (!recent.length) { el.innerHTML = '<div class="empty-state">No events yet</div>'; return; }
   el.innerHTML = recent.map(r => {
     const color = STATUS_COLORS[r.status]||'#52525B';
-    const label = r.name ? maskName(r.name) : r.email ? maskEmail(r.email) : 'Lead';
+    const label = r.name ? maskName(r.name) : r.email ? maskEmail(r.email) : (r.prospectId ? 'Lead' : 'New Lead');
     const val = r.status==='SUCCESS' && r.value
       ? `<div class="feed-value" style="color:${color}">+₹${r.value.toLocaleString('en-IN')}</div>`
       : `<div class="feed-value" style="color:var(--text4);font-size:0.65rem">${r.status}</div>`;
     return `<div class="feed-item">
       <div class="feed-dot" style="background:${color}"></div>
       <div class="feed-body">
-        <div class="feed-event"><strong>${label}</strong> → ${r.newStage}</div>
+        <div class="feed-event"><strong>${label}</strong> → ${r.newStage}${!r.oldStage ? ' <span style="font-size:0.6rem;color:var(--teal);opacity:0.7">new</span>' : ''}</div>
         <div class="feed-meta">${r.source||'unknown'} · ${timeAgo(r.timestamp)}</div>
         ${r.gclid && r.gclid.length > 10 ? `<div class="feed-meta" style="color:var(--teal);opacity:0.6">${r.gclid.slice(0,8)}…${r.gclid.slice(-4)}</div>` : ''}
       </div>${val}
