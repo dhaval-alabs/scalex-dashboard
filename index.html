@@ -423,7 +423,9 @@ function closeSidebar() {
   document.body.style.overflow = '';
 }
 
-const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSbEGvqdlB_8anAt8_yNmOtpg0PeGBkdBvs0aPcw651qIFxJunBWHtOYeiON_i1Z5DnAzpM5IHKunTw/pub?gid=1418087288&single=true&output=csv';
+const CSV_URL       = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSbEGvqdlB_8anAt8_yNmOtpg0PeGBkdBvs0aPcw651qIFxJunBWHtOYeiON_i1Z5DnAzpM5IHKunTw/pub?gid=1418087288&single=true&output=csv';
+const BATCHLOG_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSbEGvqdlB_8anAt8_yNmOtpg0PeGBkdBvs0aPcw651qIFxJunBWHtOYeiON_i1Z5DnAzpM5IHKunTw/pub?gid=745012896&single=true&output=csv';
+const FIRESTORE_URL = 'https://firestore.googleapis.com/v1/projects/analytixlabs-ads/databases/default/documents/clients/4064995850/adjustment_queue?pageSize=1000';
 const REFRESH_MS = 60000;
 
 let allRows = [], activeDays = 30, stageChart = null;
@@ -754,12 +756,12 @@ let cplChartInstance = null;
 
 // ── Pipeline Health ──────────────────────────────────────────
 function renderPipelineHealth(rows) {
-  // EC Recovery Rate: SUCCESS_EC_ONLY / (SUCCESS + SUCCESS_EC_ONLY)
-  const period = filterByPeriod(rows, activeDays);
-  const success     = period.filter(r => r.status === 'SUCCESS').length;
-  const ecOnly      = period.filter(r => r.status === 'SUCCESS_EC_ONLY').length;
-  const total       = success + ecOnly;
-  const ecRate      = total > 0 ? Math.round((ecOnly / total) * 100) : 0;
+  // ── EC Recovery Rate (from log sheet) ────────────────────
+  const period  = filterByPeriod(rows, activeDays);
+  const success = period.filter(r => r.status === 'SUCCESS').length;
+  const ecOnly  = period.filter(r => r.status === 'SUCCESS_EC_ONLY').length;
+  const total   = success + ecOnly;
+  const ecRate  = total > 0 ? Math.round((ecOnly / total) * 100) : 0;
 
   const ecCallout = document.getElementById('ec-callout');
   if (total > 0) {
@@ -769,31 +771,71 @@ function renderPipelineHealth(rows) {
     ecCallout.style.display = 'block';
   }
 
-  // Pipeline errors last 24h
-  const cutoff24 = new Date(Date.now() - 86400000);
-  const recent = rows.filter(r => new Date(r.timestamp) >= cutoff24);
-  const errorStatuses = ['SKIP_UNKNOWN_STAGE','FIRESTORE_FAIL','HTTP_503','GADS_PARTIAL_FAIL'];
-  const errorCount = recent.filter(r => errorStatuses.includes(r.status)).length;
-  const errEl = document.getElementById('ph-errors');
-  const errSub = document.getElementById('ph-errors-sub');
+  // ── Pipeline Errors 24h (from log sheet) ─────────────────
+  // GADS_PARTIAL_FAIL is NOT an error — test GCLIDs cause it, real leads go through fine
+  const cutoff24    = new Date(Date.now() - 86400000);
+  const recent      = rows.filter(r => new Date(r.timestamp) >= cutoff24);
+  const errorStatuses = ['SKIP_UNKNOWN_STAGE','FIRESTORE_FAIL','HTTP_503'];
+  const errorCount  = recent.filter(r => errorStatuses.includes(r.status)).length;
+  const errEl       = document.getElementById('ph-errors');
+  const errSub      = document.getElementById('ph-errors-sub');
   errEl.textContent = errorCount;
   errEl.style.color = errorCount > 0 ? 'var(--amber)' : 'var(--green)';
   errSub.textContent = errorCount > 0 ? 'review log sheet' : 'all clear';
 
-  // Batch + Queue tiles — loaded from BatchLog sheet if available
-  // For now show placeholder from log analysis
+  // ── Adj Queue depth (live from Firestore) ─────────────────
   const ph_queue = document.getElementById('ph-queue');
-  const adjCount = rows.filter(r => r.status === 'ADJUSTMENT_QUEUED').length;
-  ph_queue.textContent = adjCount;
+  ph_queue.textContent = '…';
+  fetch(FIRESTORE_URL)
+    .then(r => r.json())
+    .then(data => {
+      const docs    = data.documents || [];
+      const pending = docs.filter(d => {
+        const s = d.fields && d.fields.status && d.fields.status.stringValue;
+        return s === 'pending';
+      }).length;
+      ph_queue.textContent = pending;
+      ph_queue.style.color = pending > 5 ? 'var(--amber)' : 'var(--green)';
+    })
+    .catch(() => { ph_queue.textContent = '—'; });
 
-  const ph_batch = document.getElementById('ph-batch');
+  // ── Batch Run status (from BatchLog sheet) ────────────────
+  const ph_batch     = document.getElementById('ph-batch');
   const ph_batch_sub = document.getElementById('ph-batch-sub');
-  if (rows.length > 0) {
-    const lastRow = [...rows].sort((a,b) => new Date(b.timestamp)-new Date(a.timestamp))[0];
-    const lastTime = new Date(lastRow.timestamp);
-    ph_batch.textContent = lastTime.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-    ph_batch_sub.textContent = lastTime.toLocaleDateString('en-IN',{day:'numeric',month:'short'}) + ' · last event';
-  }
+  ph_batch.textContent     = '…';
+  ph_batch_sub.textContent = 'loading…';
+
+  fetch(BATCHLOG_URL + '&t=' + Date.now())
+    .then(r => r.text())
+    .then(csv => {
+      const lines = csv.trim().split('\n').filter(l => l.trim());
+      if (lines.length < 2) { ph_batch.textContent = '—'; return; }
+      // Last row (skip header)
+      const last   = lines[lines.length - 1].split(',');
+      const ts     = last[0] ? last[0].replace(/"/g,'').trim() : '';
+      const status = last[1] ? last[1].replace(/"/g,'').trim() : '';
+      const proc   = last[2] ? last[2].replace(/"/g,'').trim() : '0';
+      const drop   = last[3] ? last[3].replace(/"/g,'').trim() : '0';
+
+      if (!ts) { ph_batch.textContent = '—'; return; }
+
+      const runTime  = new Date(ts);
+      const hoursAgo = (Date.now() - runTime) / 3600000;
+      const isStale  = hoursAgo > 26;
+
+      ph_batch.textContent = status === 'EMPTY'
+        ? 'EMPTY'
+        : status + ' · ' + proc + ' sent';
+      ph_batch.style.color = isStale ? 'var(--coral)' :
+                             (status === 'SUCCESS' || status === 'EMPTY' || status === 'PARTIAL_FAIL')
+                             ? 'var(--green)' : 'var(--amber)';
+
+      const dateStr = runTime.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+      const timeStr = runTime.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+      ph_batch_sub.textContent = dateStr + ' · ' + timeStr
+        + (isStale ? ' · ⚠ stale' : ' · ' + Math.round(hoursAgo) + 'h ago');
+    })
+    .catch(() => { ph_batch.textContent = '—'; ph_batch_sub.textContent = 'unavailable'; });
 }
 
 function initCplChart(weeklyCpl) {
