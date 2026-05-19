@@ -40,6 +40,12 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .topbar-right{display:flex;align-items:center;gap:0.75rem}
 .period-btn{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;padding:4px 10px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer}
 .period-btn.active{border-color:var(--teal);color:var(--teal);background:var(--teal-dim)}
+.date-picker-wrap{display:none;align-items:center;gap:0.4rem;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:3px 8px}
+.date-picker-wrap.open{display:flex}
+.date-picker-wrap input[type=date]{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;background:transparent;border:none;color:var(--text2);outline:none;cursor:pointer;padding:0}
+.date-picker-wrap input[type=date]::-webkit-calendar-picker-indicator{filter:invert(0.5);cursor:pointer;width:10px}
+.date-picker-sep{color:var(--text4);font-size:0.65rem}
+.date-apply-btn{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;padding:2px 7px;border-radius:3px;border:1px solid var(--teal);color:var(--teal);background:var(--teal-dim);cursor:pointer}
 .refresh-btn{display:flex;align-items:center;gap:0.35rem;font-size:0.75rem;color:var(--text3);border:1px solid var(--border2);background:transparent;padding:4px 10px;border-radius:4px;cursor:pointer;transition:all 0.2s}
 .refresh-btn:hover{color:var(--teal);border-color:var(--teal)}
 .refresh-btn.spinning svg{animation:spin 1s linear infinite}
@@ -227,6 +233,13 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <button class="period-btn" onclick="setPeriod(7,this)">7D</button>
         <button class="period-btn active" onclick="setPeriod(30,this)">30D</button>
         <button class="period-btn" onclick="setPeriod(90,this)">90D</button>
+        <button class="period-btn" onclick="toggleCustomDate(this)">Custom</button>
+        <div class="date-picker-wrap" id="date-picker-wrap">
+          <input type="date" id="date-from" />
+          <span class="date-sep">→</span>
+          <input type="date" id="date-to" />
+          <button class="date-apply-btn" onclick="applyCustomDate()">Go</button>
+        </div>
         <button class="refresh-btn" id="refresh-btn" onclick="loadData()">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
           <span>Refresh</span>
@@ -264,9 +277,14 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
           <div class="kpi-sub" id="kpi-success-sub">loading…</div>
         </div>
         <div class="kpi amber">
-          <div class="kpi-label">GCLID Match Rate</div>
-          <div class="kpi-value" id="kpi-match">—</div>
-          <div class="kpi-sub" id="kpi-match-sub">loading…</div>
+          <div class="kpi-label">GCLID · Form Leads</div>
+          <div class="kpi-value" id="kpi-match-form">—</div>
+          <div class="kpi-sub" id="kpi-match-form-sub">loading…</div>
+        </div>
+        <div class="kpi" style="border-top:2px solid var(--coral)">
+          <div class="kpi-label">GCLID · Non-Form</div>
+          <div class="kpi-value" id="kpi-match-nonform">—</div>
+          <div class="kpi-sub" id="kpi-match-nonform-sub">loading…</div>
         </div>
       </div>
 
@@ -410,7 +428,46 @@ const REFRESH_MS = 60000;
 
 let allRows = [], activeDays = 30, stageChart = null;
 
+function toggleCustomDate(btn) {
+  const wrap = document.getElementById('date-picker-wrap');
+  const isOpen = wrap.classList.contains('open');
+  if (isOpen) {
+    wrap.classList.remove('open');
+    btn.classList.remove('active');
+  } else {
+    // Set default dates: last 30 days
+    const today = new Date();
+    const from  = new Date(); from.setDate(today.getDate() - 30);
+    document.getElementById('date-to').value   = today.toISOString().split('T')[0];
+    document.getElementById('date-from').value = from.toISOString().split('T')[0];
+    wrap.classList.add('open');
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+}
+
+function applyCustomDate() {
+  const from = document.getElementById('date-from').value;
+  const to   = document.getElementById('date-to').value;
+  if (!from || !to) return;
+  const fromDate = new Date(from);
+  const toDate   = new Date(to);
+  const days = Math.round((toDate - fromDate) / 86400000);
+  if (days < 1) return;
+  // Filter rows by custom date range
+  customDateRange = { from: fromDate, to: toDate };
+  activeDays = null; // null = custom mode
+  renderAll();
+  document.getElementById('topbar-sub').textContent =
+    'Custom: ' + fromDate.toLocaleDateString('en-IN',{day:'numeric',month:'short'}) +
+    ' – ' + toDate.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+}
+
+let customDateRange = null;
+
 function setPeriod(days, btn) {
+  customDateRange = null;
+  document.getElementById('date-picker-wrap').classList.remove('open');
   document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   activeDays = days;
@@ -470,15 +527,28 @@ function renderAll() {
 
 function renderKPIs(rows) {
   const successes = rows.filter(r => r.status === 'SUCCESS');
-  const withStage = rows.filter(r => r.newStage && r.status !== 'PARSE_ERROR');
-  const withGclid = rows.filter(r => r.gclid && r.gclid.length > 10);
-  const matchRate = withStage.length > 0 ? Math.round((withGclid.length / withStage.length) * 100) : 0;
   const totalValue = successes.reduce((s,r) => s + r.value, 0);
-
   document.getElementById('kpi-success').textContent = successes.length;
   document.getElementById('kpi-success-sub').textContent = '₹' + totalValue.toLocaleString('en-IN') + ' proxy value sent';
-  document.getElementById('kpi-match').textContent = matchRate + '%';
-  document.getElementById('kpi-match-sub').textContent = withGclid.length + ' of ' + withStage.length + ' events matched';
+
+  // GCLID match rate — split form vs non-form
+  // Form leads: source contains "form", "brochure", "eligibility", "demo", "download"
+  const formKeywords = /form|brochure|eligib|demo|download|checkelig/i;
+  const allActive = rows.filter(r => r.newStage && r.status !== 'PARSE_ERROR' && r.status !== 'SKIP_NON_PPC');
+
+  const formLeads    = allActive.filter(r => formKeywords.test(r.source || ''));
+  const nonFormLeads = allActive.filter(r => !formKeywords.test(r.source || '') && r.source);
+
+  const formWithGclid    = formLeads.filter(r => r.gclid && r.gclid.length > 10);
+  const nonFormWithGclid = nonFormLeads.filter(r => r.gclid && r.gclid.length > 10);
+
+  const formRate    = formLeads.length > 0    ? Math.round((formWithGclid.length / formLeads.length) * 100)       : 0;
+  const nonFormRate = nonFormLeads.length > 0 ? Math.round((nonFormWithGclid.length / nonFormLeads.length) * 100) : 0;
+
+  document.getElementById('kpi-match-form').textContent    = formRate + '%';
+  document.getElementById('kpi-match-form-sub').textContent = formWithGclid.length + ' of ' + formLeads.length + ' form leads matched';
+  document.getElementById('kpi-match-nonform').textContent    = nonFormRate + '%';
+  document.getElementById('kpi-match-nonform-sub').textContent = nonFormWithGclid.length + ' of ' + nonFormLeads.length + ' call/walk-in leads';
 }
 
 const STAGE_CONFIG = [
@@ -545,6 +615,7 @@ function renderFeed(rows) {
       <div class="feed-body">
         <div class="feed-event"><strong>${label}</strong> → ${r.newStage}</div>
         <div class="feed-meta">${r.source||'unknown'} · ${timeAgo(r.timestamp)}</div>
+        ${r.gclid && r.gclid.length > 10 ? `<div class="feed-meta" style="color:var(--teal);opacity:0.6">${r.gclid.slice(0,8)}…${r.gclid.slice(-4)}</div>` : ''}
       </div>${val}
     </div>`;
   }).join('');
