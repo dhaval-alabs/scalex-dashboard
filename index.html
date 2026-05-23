@@ -49,8 +49,10 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .topbar-left h1{font-size:1rem;font-weight:600;color:var(--text);letter-spacing:-0.01em}
 .topbar-left p{font-size:0.75rem;color:var(--text3);margin-top:1px}
 .topbar-right{display:flex;align-items:center;gap:0.75rem}
-.period-btn{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;padding:4px 10px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer}
-.period-btn.active{border-color:var(--teal);color:var(--teal);background:var(--teal-dim)}
+.date-dropdown-wrap{position:relative;display:flex;align-items:center}
+.date-dropdown{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;padding:5px 28px 5px 10px;border-radius:4px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;min-width:200px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2371717A' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;transition:border-color 0.2s}
+.date-dropdown:focus,.date-dropdown:hover{border-color:var(--teal);color:var(--text)}
+.date-dropdown option{background:var(--bg2);color:var(--text)}
 .date-picker-wrap{display:none;align-items:center;gap:0.4rem;background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:3px 8px}
 .date-picker-wrap.open{display:flex}
 .date-picker-wrap input[type=date]{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;background:transparent;border:none;color:var(--text2);outline:none;cursor:pointer;padding:0}
@@ -124,15 +126,41 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .lift-stat{display:flex;flex-direction:column;align-items:center;padding:0 1.25rem;gap:0.2rem}
 .lift-stat:first-child{padding-left:0}
 .lift-val{font-family:'IBM Plex Mono',monospace;font-size:1.4rem;font-weight:700;color:var(--teal);line-height:1}
-#lh-cpl-val{color:var(--green)}
+#lh-cpl-val{color:var(--teal)}
 #lh-leads-val{color:var(--teal)}
 #lh-ec-val{color:var(--purple)}
 #lh-restate-val{color:var(--blue)}
 .lift-label{font-size:0.68rem;color:var(--text4);text-align:center;white-space:nowrap}
 .lift-divider{width:1px;height:2.5rem;background:var(--border2);flex-shrink:0}
 
-.signal-flow-panel{display:grid;grid-template-columns:2fr 1.8fr 1.4fr;gap:10px;margin-bottom:1.25rem}
-.sf-col{min-width:0}
+/* Signal Flow Panel */
+.sf-panel-wrap{margin-bottom:1.25rem}
+.sf-panel-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem}
+.sf-row1{display:grid;grid-template-columns:1.6fr 24px 1.2fr 24px 1.4fr 1px 1fr;gap:0.5rem;align-items:start;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+.sf-zone{min-width:0}
+.sf-zone-label{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text4);margin-bottom:0.4rem}
+.sf-zone-src{color:var(--text4);font-size:0.55rem;margin-left:4px}
+.sf-zone-big{font-family:'IBM Plex Mono',monospace;font-size:1.6rem;font-weight:700;color:var(--text);line-height:1}
+.sf-zone-sub{font-size:0.65rem;color:var(--text4);margin-top:0.15rem}
+.sf-arrow{display:flex;align-items:center;justify-content:center;color:var(--border2);padding-top:1.2rem}
+.sf-inbound .sf-zone-big{color:var(--blue)}
+.sf-outbound .sf-zone-big{color:var(--teal)}
+.sf-filter-rows{display:flex;flex-direction:column;gap:0.3rem;margin-top:0.4rem}
+.sf-filter-row{display:flex;justify-content:space-between;align-items:center;gap:0.5rem}
+.sf-filter-key{font-size:0.72rem;color:var(--text3)}
+.sf-filter-val{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;font-weight:600;color:var(--teal)}
+.sf-filter-sub{font-size:0.62rem;color:var(--text4);margin-top:0.4rem;line-height:1.7;padding-left:0.25rem;border-left:2px solid var(--border2)}
+.sf-donut-caption{font-size:0.62rem;color:var(--text4);text-align:center;margin-top:0.4rem;font-style:italic;line-height:1.4}
+.sf-feed-zone .feed-item{padding:0.4rem 0}
+.sf-feed-zone .feed-event{font-size:0.7rem}
+.sf-feed-zone .feed-meta{font-size:0.58rem}
+.sf-row2{padding-top:0.75rem}
+.sf-row2-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem}
+@media(max-width:900px){
+  .sf-row1{grid-template-columns:1fr;gap:1rem}
+  .sf-arrow{transform:rotate(90deg);justify-content:flex-start;padding:0}
+  .sf-feed-zone{border-left:none;padding-left:0;border-top:1px solid var(--border);padding-top:0.75rem}
+}
 
 .ops-strip{display:flex;align-items:center;gap:0.5rem;padding:0.6rem 1rem;background:linear-gradient(90deg,rgba(167,139,250,0.05),var(--bg2) 50%);border:1px solid var(--border);border-radius:var(--radius2);margin-bottom:1.25rem;flex-wrap:wrap}
 .ops-label{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text4);margin-right:0.25rem;white-space:nowrap}
@@ -281,11 +309,21 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         </div>
       </div>
       <div class="topbar-right">
-        <button class="period-btn" onclick="setPeriod(7,this)">7D</button>
-        <button class="period-btn active" onclick="setPeriod(30,this)">30D</button>
-        <button class="period-btn" onclick="setPeriod(90,this)">90D</button>
-        <button class="period-btn" onclick="setPeriod('scalex',this)">Since W6</button>
-        <button class="period-btn" onclick="toggleCustomDate(this)">Custom</button>
+        <div class="date-dropdown-wrap">
+          <select class="date-dropdown" id="date-dropdown" onchange="handleDateDropdown(this)">
+            <option value="today">Today</option>
+            <option value="yesterday">Yesterday</option>
+            <option value="7">Last 7 days</option>
+            <option value="14">Last 14 days</option>
+            <option value="30" selected>Last 30 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="this_month">This month</option>
+            <option value="last_month">Last month</option>
+            <option value="this_quarter">This quarter</option>
+            <option value="scalex">Since ScaleX activation (W6)</option>
+            <option value="custom">Custom…</option>
+          </select>
+        </div>
         <div class="date-picker-wrap" id="date-picker-wrap">
           <input type="date" id="date-from" />
           <span class="date-sep">→</span>
@@ -306,23 +344,28 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     <div class="content">
       <div class="lift-hook" id="lift-hook">
         <div class="lift-stat" id="lh-cpl">
-          <div class="lift-val" id="lh-cpl-val">−22%</div>
-          <div class="lift-label">CPL reduction</div>
+          <div class="lift-val" id="lh-cpl-val">₹599 → ₹468</div>
+          <div class="lift-label">CPL · before → after ScaleX</div>
         </div>
         <div class="lift-divider"></div>
         <div class="lift-stat" id="lh-leads">
-          <div class="lift-val" id="lh-leads-val">+38%</div>
-          <div class="lift-label">more leads · same budget</div>
+          <div class="lift-val" id="lh-leads-val">+345 leads</div>
+          <div class="lift-label">incremental · same budget</div>
         </div>
         <div class="lift-divider"></div>
         <div class="lift-stat" id="lh-ec">
           <div class="lift-val" id="lh-ec-val">—</div>
-          <div class="lift-label">EC recovery rate</div>
+          <div class="lift-label">recovered via EC</div>
         </div>
         <div class="lift-divider"></div>
         <div class="lift-stat" id="lh-restate">
           <div class="lift-val" id="lh-restate-val">—</div>
-          <div class="lift-label">restatements sent</div>
+          <div class="lift-label">corrections last 7d</div>
+        </div>
+        <div class="lift-divider"></div>
+        <div class="lift-stat" id="lh-blr" style="opacity:0.85">
+          <div class="lift-val" id="lh-blr-val" style="color:var(--amber);font-size:1rem">−58% CPL · +255% leads</div>
+          <div class="lift-label">★ Bangalore · best campaign</div>
         </div>
       </div>
 
@@ -393,38 +436,95 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         </div>
       </div>
 
-      <!-- Signal Flow panel -->
-      <div class="signal-flow-panel">
-        <div class="chart-card sf-col sf-funnel" style="border-top:2px solid rgba(0,212,170,0.4)">
-          <div class="chart-header">
-            <div>
-              <div class="chart-title">Lead Funnel</div>
-              <div class="chart-sub">Stage distribution · live</div>
-            </div>
+      <!-- Signal Flow panel — Inbound → Filter → Outbound | Feed -->
+      <div class="chart-card sf-panel-wrap">
+        <div class="sf-panel-header">
+          <div>
+            <div class="chart-title">Signal Flow</div>
+            <div class="chart-sub">CRM inbound → ScaleX filter → Google Ads outbound</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.75rem">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;padding:2px 7px;border-radius:3px;border:1px solid var(--border2);color:var(--text4)">v10 · live</span>
             <div class="live-tag"><div class="live-dot"></div>live</div>
           </div>
-          <div id="funnel-stages"><div class="empty-state">Loading…</div></div>
         </div>
-        <div class="chart-card sf-col sf-feed" style="border-top:2px solid rgba(52,211,153,0.4)">
-          <div class="chart-header">
-            <div>
-              <div class="chart-title">Live CRM Events</div>
-              <div class="chart-sub">Recent stage changes · sGTM</div>
-            </div>
-            <div class="live-tag"><div class="live-dot"></div>live</div>
+
+        <!-- Row 1: Inbound | Filter | Outbound | Feed -->
+        <div class="sf-row1">
+
+          <!-- Zone A: Inbound CRM -->
+          <div class="sf-zone sf-inbound">
+            <div class="sf-zone-label">INBOUND <span class="sf-zone-src">CRM</span></div>
+            <div class="sf-zone-big" id="sf-inbound-count">—</div>
+            <div class="sf-zone-sub">stage changes</div>
+            <div id="sf-inbound-bars" style="margin-top:0.75rem"></div>
           </div>
-          <div id="feed-list"><div class="empty-state">Loading…</div></div>
-        </div>
-        <div class="chart-card sf-col sf-restate" style="border-top:2px solid rgba(251,191,36,0.4)">
-          <div class="chart-header">
-            <div>
-              <div class="chart-title">Restatement Cascade</div>
-              <div class="chart-sub">Daily · sent vs dropped</div>
+
+          <!-- Arrow -->
+          <div class="sf-arrow">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </div>
+
+          <!-- Zone B: ScaleX Filter -->
+          <div class="sf-zone sf-filter">
+            <div class="sf-zone-label">SCALEX <span class="sf-zone-src">filter</span></div>
+            <div class="sf-filter-rows" id="sf-filter-rows">
+              <div class="sf-filter-row">
+                <span class="sf-filter-key">PPC-only filter</span>
+                <span class="sf-filter-val" id="sf-ppc-pass">—</span>
+              </div>
+              <div class="sf-filter-row">
+                <span class="sf-filter-key">14 → 5 mapping</span>
+                <span class="sf-filter-val" style="color:var(--teal)">active</span>
+              </div>
+              <div class="sf-filter-row" style="margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid var(--border)">
+                <span class="sf-filter-key" style="color:var(--text4)">Filtered out</span>
+                <span class="sf-filter-val" id="sf-filtered-total" style="color:var(--text4)">—</span>
+              </div>
+              <div class="sf-filter-sub" id="sf-filter-breakdown"></div>
             </div>
           </div>
-          <div style="position:relative;height:200px"><canvas id="restateChart"></canvas></div>
+
+          <!-- Arrow -->
+          <div class="sf-arrow">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </div>
+
+          <!-- Zone C: Outbound Google -->
+          <div class="sf-zone sf-outbound">
+            <div class="sf-zone-label">OUTBOUND <span class="sf-zone-src">Google Ads</span></div>
+            <div class="sf-zone-big" id="sf-outbound-count">—</div>
+            <div class="sf-zone-sub">conversions sent</div>
+            <div style="position:relative;height:130px;margin-top:0.5rem"><canvas id="sfDonutChart"></canvas></div>
+            <div class="sf-donut-caption">ScaleX maps 14 CRM stages into 5 proxy-value buckets</div>
+          </div>
+
+          <!-- Zone D: Live Feed sidebar -->
+          <div class="sf-zone sf-feed-zone" style="border-left:1px solid var(--border);padding-left:0.85rem">
+            <div class="sf-zone-label">LIVE FEED <span class="sf-zone-src">sGTM</span><div class="live-dot" style="display:inline-block;margin-left:4px"></div></div>
+            <div id="feed-list" style="max-height:220px;overflow-y:auto"><div class="empty-state">Loading…</div></div>
+          </div>
+
         </div>
+
+        <!-- Row 2: Restatement Cascade -->
+        <div class="sf-row2">
+          <div class="sf-row2-header">
+            <div>
+              <span class="sf-zone-label">RESTATEMENT CASCADE</span>
+              <span class="sf-zone-src" style="margin-left:6px">corrections applied to Google</span>
+            </div>
+            <span id="sf-restate-note" style="font-size:0.65rem;color:var(--amber);font-family:'IBM Plex Mono',monospace"></span>
+          </div>
+          <div style="position:relative;height:120px"><canvas id="restateChart"></canvas></div>
+        </div>
+
       </div>
+      <!-- end Signal Flow panel -->
+
+      <!-- Lead Funnel (hidden element — data still computed, used by inbound zone) -->
+      <div id="funnel-stages" style="display:none"></div>
+
     </div>
 
       <!-- Campaign breakdown — live from Google Ads -->
@@ -506,51 +606,23 @@ const REFRESH_MS = 60000;
 
 let allRows = [], activeDays = 30, stageChart = null;
 
-function toggleCustomDate(btn) {
-  const wrap = document.getElementById('date-picker-wrap');
-  const isOpen = wrap.classList.contains('open');
-  if (isOpen) {
-    wrap.classList.remove('open');
-    btn.classList.remove('active');
-  } else {
-    // Set default dates: last 30 days
-    const today = new Date();
-    const from  = new Date(); from.setDate(today.getDate() - 30);
-    document.getElementById('date-to').value   = today.toISOString().split('T')[0];
-    document.getElementById('date-from').value = from.toISOString().split('T')[0];
-    wrap.classList.add('open');
-    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  }
-}
+// toggleCustomDate removed — handled by dropdown
+
 
 function applyCustomDate() {
   const from = document.getElementById('date-from').value;
   const to   = document.getElementById('date-to').value;
   if (!from || !to) return;
-  const fromDate = new Date(from);
-  const toDate   = new Date(to);
-  const days = Math.round((toDate - fromDate) / 86400000);
-  if (days < 1) return;
-  // Filter rows by custom date range
-  customDateRange = { from: fromDate, to: toDate };
-  activeDays = null; // null = custom mode
+  customDateRange = { from: new Date(from), to: new Date(to + 'T23:59:59') };
+  activeDays = 'custom';
+  document.getElementById('date-picker-wrap').classList.remove('open');
   renderAll();
-  document.getElementById('topbar-sub').textContent =
-    'Custom: ' + fromDate.toLocaleDateString('en-IN',{day:'numeric',month:'short'}) +
-    ' – ' + toDate.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
 }
 
 let customDateRange = null;
 
-function setPeriod(days, btn) {
-  customDateRange = null;
-  document.getElementById('date-picker-wrap').classList.remove('open');
-  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  activeDays = days;
-  renderAll();
-}
+// setPeriod removed — handled by handleDateDropdown
+
 
 async function fetchSheetData() {
   const res  = await fetch(CSV_URL + '&t=' + Date.now());
@@ -585,29 +657,63 @@ function splitCSVLine(line) {
   return result;
 }
 
-function filterByPeriod(rows, days) {
-  if (days === 'scalex') {
-    const scalexStart = new Date('2026-05-09T00:00:00');
-    return rows.filter(r => { const d = new Date(r.timestamp); return !isNaN(d) && d >= scalexStart; });
+function getDateRange(mode) {
+  const now   = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  switch(mode) {
+    case 'today':
+      return { from: today, to: new Date(today.getTime()+86399999) };
+    case 'yesterday': {
+      const y = new Date(today); y.setDate(y.getDate()-1);
+      return { from: y, to: new Date(y.getTime()+86399999) };
+    }
+    case 'this_month':
+      return { from: new Date(now.getFullYear(), now.getMonth(), 1), to: now };
+    case 'last_month': {
+      const f = new Date(now.getFullYear(), now.getMonth()-1, 1);
+      const t = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+      return { from: f, to: t };
+    }
+    case 'this_quarter': {
+      const q = Math.floor(now.getMonth()/3);
+      return { from: new Date(now.getFullYear(), q*3, 1), to: now };
+    }
+    case 'scalex':
+      return { from: new Date('2026-05-09T00:00:00'), to: now };
+    case 'custom':
+      return customDateRange || { from: null, to: now };
+    default: {
+      const days = parseInt(mode) || 30;
+      const f = new Date(today); f.setDate(f.getDate()-days);
+      return { from: f, to: now };
+    }
   }
-  if (!days || customDateRange) {
-    const { from, to } = customDateRange || {};
-    return rows.filter(r => { const d = new Date(r.timestamp); return !isNaN(d) && (!from || d >= from) && (!to || d <= to); });
-  }
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - days);
+}
+
+function filterByPeriod(rows, mode) {
+  const { from, to } = getDateRange(mode || activeDays);
   return rows.filter(r => {
     const d = new Date(r.timestamp);
-    return !isNaN(d) && d >= cutoff;
+    return !isNaN(d) && (!from || d >= from) && (!to || d <= to);
   });
+}
+
+function handleDateDropdown(sel) {
+  const val = sel.value;
+  if (val === 'custom') {
+    document.getElementById('date-picker-wrap').classList.add('open');
+    return;
+  }
+  document.getElementById('date-picker-wrap').classList.remove('open');
+  activeDays = val;
+  renderAll();
 }
 
 function renderAll() {
   const rows = filterByPeriod(allRows, activeDays);
   renderKPIs(rows);
-  renderFunnel(rows);
-  renderFeed(allRows);
-  renderStageChart(rows);
+  renderSignalFlow(rows);   // Inbound→Filter→Outbound + donut
+  renderFeed(allRows);      // Live feed sidebar
   renderECTrend(allRows);
   renderOpsStrip(allRows);
   renderRestatementChart();
@@ -670,22 +776,121 @@ const STAGE_CONFIG = [
 ];
 
 function renderFunnel(rows) {
-  const el = document.getElementById('funnel-stages');
+  // Still populate hidden funnel-stages for any legacy reference
   const counts = {};
   rows.forEach(r => { if (r.newStage) counts[r.newStage] = (counts[r.newStage]||0) + 1; });
-  const maxCount = Math.max(...Object.values(counts), 1);
-  // Only show stages in STAGE_SHOW — filter out test/internal/noise stages
-  const stages = STAGE_CONFIG.filter(s => counts[s.key] > 0 && STAGE_SHOW.has(s.key));
-  if (!stages.length) { el.innerHTML = '<div class="empty-state">No data in this period</div>'; return; }
-  el.innerHTML = stages.map(s => {
-    const count = counts[s.key]||0;
-    const pct = Math.round((count/maxCount)*100);
-    return `<div class="funnel-stage">
-      <div class="stage-name">${s.key}</div>
-      <div class="stage-bar-wrap"><div class="stage-bar" style="width:${pct}%;background:${s.color}"></div></div>
-      <div class="stage-count">${count}</div>
-    </div>`;
-  }).join('');
+  const el = document.getElementById('funnel-stages');
+  if (el) {
+    const maxCount = Math.max(...Object.values(counts), 1);
+    const stages = STAGE_CONFIG.filter(s => counts[s.key] > 0 && STAGE_SHOW.has(s.key));
+    el.innerHTML = stages.map(s => {
+      const count = counts[s.key]||0;
+      const pct = Math.round((count/maxCount)*100);
+      return `<div class="funnel-stage"><div class="stage-name">${s.key}</div><div class="stage-bar-wrap"><div class="stage-bar" style="width:${pct}%;background:${s.color}"></div></div><div class="stage-count">${count}</div></div>`;
+    }).join('');
+  }
+  return counts;
+}
+
+// ── DROP_STAGES list ──────────────────────────────────────────
+const DROP_STAGES = new Set(['AH','Missed Call','Existing']);
+const PPC_SOURCES = new Set(['ppc','google','google_ads']);
+
+function renderSignalFlow(rows) {
+  // ── Inbound counts ──────────────────────────────────────────
+  const allCounts = {};
+  rows.forEach(r => { if (r.newStage) allCounts[r.newStage] = (allCounts[r.newStage]||0) + 1; });
+  const inboundTotal = rows.filter(r => r.newStage).length;
+  const sfInbound = document.getElementById('sf-inbound-count');
+  if (sfInbound) sfInbound.textContent = inboundTotal.toLocaleString('en-IN');
+
+  // Mini bars (top 6 stages)
+  const barsEl = document.getElementById('sf-inbound-bars');
+  if (barsEl) {
+    const topStages = Object.entries(allCounts).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    const maxC = topStages[0]?.[1]||1;
+    barsEl.innerHTML = topStages.map(([stage, count]) => {
+      const pct = Math.round((count/maxC)*100);
+      return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+        <div style="font-size:0.62rem;color:var(--text4);width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${stage}</div>
+        <div style="flex:1;background:var(--bg3);border-radius:2px;height:4px"><div style="width:${pct}%;height:100%;background:rgba(76,159,255,0.5);border-radius:2px"></div></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--text4);width:28px;text-align:right">${count}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Filter stats ────────────────────────────────────────────
+  const ppcPass    = rows.filter(r => r.status === 'SUCCESS' || r.status === 'SUCCESS_EC_ONLY').length;
+  const noGclid    = rows.filter(r => r.status === 'NO_GCLID').length;
+  const skipNonPpc = rows.filter(r => r.status === 'SKIP_NON_PPC').length;
+  const dropStage  = rows.filter(r => r.status === 'SKIP_UNKNOWN_STAGE' || (r.newStage && DROP_STAGES.has(r.newStage))).length;
+  const filteredTotal = rows.length - ppcPass;
+
+  const ppcPassEl = document.getElementById('sf-ppc-pass');
+  if (ppcPassEl) ppcPassEl.textContent = ppcPass.toLocaleString('en-IN') + ' passed';
+  const filtEl = document.getElementById('sf-filtered-total');
+  if (filtEl) filtEl.textContent = (filteredTotal > 0 ? filteredTotal : rows.length - ppcPass).toLocaleString('en-IN');
+  const breakdown = document.getElementById('sf-filter-breakdown');
+  if (breakdown) {
+    breakdown.innerHTML = `
+      non-PPC source: ${skipNonPpc}<br>
+      no GCLID: ${noGclid}<br>
+      drop stages: ${dropStage}`;
+  }
+
+  // ── Outbound donut (value-encoded) ──────────────────────────
+  const outboundTotal = ppcPass;
+  const sfOut = document.getElementById('sf-outbound-count');
+  if (sfOut) sfOut.textContent = outboundTotal.toLocaleString('en-IN');
+
+  // Map conversionId → bucket
+  const bucketMap = {
+    'lead_submitted':'New Lead','signup':'Sign-up','qualified':'Qualified',
+    'converted':'Converted','disqualified':'Disqualified'
+  };
+  const bucketColors = {
+    'New Lead':    'rgba(0,212,170,0.35)',
+    'Sign-up':     'rgba(0,212,170,0.6)',
+    'Qualified':   '#00D4AA',
+    'Converted':   '#003368',
+    'Disqualified':'#52525B'
+  };
+  const bucketCounts = { 'New Lead':0,'Sign-up':0,'Qualified':0,'Converted':0,'Disqualified':0 };
+  rows.filter(r => r.status==='SUCCESS'||r.status==='SUCCESS_EC_ONLY').forEach(r => {
+    const key = r.convId ? (r.convId.toLowerCase().includes('disq') ? 'Disqualified'
+      : r.convId.toLowerCase().includes('sign')||r.convId.toLowerCase().includes('signup') ? 'Sign-up'
+      : r.convId.toLowerCase().includes('qual') ? 'Qualified'
+      : r.convId.toLowerCase().includes('convert') ? 'Converted'
+      : 'New Lead') : 'New Lead';
+    bucketCounts[key]++;
+  });
+
+  const donutLabels = Object.keys(bucketCounts);
+  const donutData   = donutLabels.map(k => bucketCounts[k]);
+  const donutColors = donutLabels.map(k => bucketColors[k]);
+
+  if (window._sfDonutChart) { window._sfDonutChart.destroy(); window._sfDonutChart = null; }
+  const donutCanvas = document.getElementById('sfDonutChart');
+  if (donutCanvas && donutData.some(d => d > 0)) {
+    window._sfDonutChart = new Chart(donutCanvas, {
+      type: 'doughnut',
+      data: { labels: donutLabels, datasets: [{ data: donutData, backgroundColor: donutColors, borderWidth: 0, hoverOffset: 4 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '62%',
+        plugins: {
+          legend: { position:'bottom', labels:{ color:chartColors().text4, font:{family:"'IBM Plex Mono'",size:8}, boxWidth:8, padding:5 } },
+          tooltip: {
+            backgroundColor:chartColors().bg2, borderColor:chartColors().border, borderWidth:1,
+            titleColor:chartColors().text, bodyColor:chartColors().text4,
+            callbacks: { label: ctx => {
+              const vals = {'New Lead':'₹200','Sign-up':'₹500','Qualified':'₹2,000','Converted':'₹10,000','Disqualified':'₹1'};
+              return `${ctx.label}: ${ctx.raw} · proxy ${vals[ctx.label]||''}`;
+            }}
+          }
+        }
+      }
+    });
+  }
 }
 
 const STATUS_COLORS = { SUCCESS:'#34D399', SKIP:'#52525B', NO_GCLID:'#FBBF24', PARSE_ERROR:'#EF4444' };
@@ -721,26 +926,8 @@ function renderFeed(rows) {
 }
 
 function renderStageChart(rows) {
-  const counts = {};
-  rows.filter(r => r.status==='SUCCESS').forEach(r => { counts[r.newStage]=(counts[r.newStage]||0)+1; });
-  const labels = Object.keys(counts);
-  const data   = labels.map(l => counts[l]);
-  const colors = ['#00D4AA','#4C9FFF','#A78BFA','#FBBF24','#FF6B4A','#34D399','#52525B','#FB923C'];
-  if (stageChart) { stageChart.destroy(); stageChart = null; }
-  const wrap = document.getElementById('stage-chart-wrap');
-  if (!labels.length) { wrap.innerHTML = '<div class="empty-state" style="padding-top:3rem">No SUCCESS conversions yet</div>'; return; }
-  if (!wrap.querySelector('canvas')) { wrap.innerHTML = '<canvas id="stageChart"></canvas>'; }
-  stageChart = new Chart(document.getElementById('stageChart'), {
-    type: 'doughnut',
-    data: { labels, datasets: [{ data, backgroundColor: colors.slice(0,labels.length), borderWidth:0, hoverOffset:4 }] },
-    options: {
-      responsive:true, maintainAspectRatio:false, cutout:'65%',
-      plugins: {
-        legend: { position:'bottom', labels:{ color:'#71717A', font:{family:"'IBM Plex Mono'",size:10}, boxWidth:10, padding:8 } },
-        tooltip: { backgroundColor:chartColors().bg2, borderColor:chartColors().border, borderWidth:1, titleColor:chartColors().text, bodyColor:chartColors().text4 }
-      }
-    }
-  });
+  // Delegated to renderSignalFlow — kept for backward compat call in renderAll
+  renderSignalFlow(rows);
 }
 
 // ── Google Ads API fetch ──────────────────────────────────────
@@ -768,14 +955,21 @@ function renderGadsKPIs(data) {
   document.getElementById('kpi-spend-sub').textContent =
     '₹' + data.total_spend.toLocaleString('en-IN') + ' total spend';
 
-  // Update lift hook CPL + leads stats from real Google Ads data
-  if (data.cpl_change_pct !== undefined) {
+  // Update lift hook CPL: ₹before → ₹after
+  if (data.cpl_before !== undefined && data.cpl !== undefined) {
     const lhCpl = document.getElementById('lh-cpl-val');
-    if (lhCpl) lhCpl.textContent = (data.cpl_change_pct > 0 ? '+' : '') + data.cpl_change_pct + '%';
+    if (lhCpl) lhCpl.textContent = '₹' + Math.round(data.cpl_before).toLocaleString('en-IN') + ' → ₹' + Math.round(data.cpl).toLocaleString('en-IN');
+  } else if (data.cpl_change_pct !== undefined) {
+    const lhCpl = document.getElementById('lh-cpl-val');
+    if (lhCpl) lhCpl.textContent = (data.cpl_change_pct > 0 ? '+' : '') + data.cpl_change_pct + '% CPL';
   }
-  if (data.conv_change_pct !== undefined) {
+  // Incremental leads
+  if (data.incremental_leads !== undefined) {
     const lhLeads = document.getElementById('lh-leads-val');
-    if (lhLeads) lhLeads.textContent = (data.conv_change_pct > 0 ? '+' : '') + data.conv_change_pct + '%';
+    if (lhLeads) lhLeads.textContent = '+' + data.incremental_leads.toLocaleString('en-IN') + ' leads';
+  } else if (data.conv_change_pct !== undefined) {
+    const lhLeads = document.getElementById('lh-leads-val');
+    if (lhLeads) lhLeads.textContent = (data.conv_change_pct > 0 ? '+' : '') + data.conv_change_pct + '% leads';
   }
 
   if (data.campaigns) renderCampaigns(data.campaigns, data.cpl);
@@ -983,7 +1177,7 @@ function renderECTrend(rows) {
   const allTotal = rows.filter(r => r.status === 'SUCCESS' || r.status === 'SUCCESS_EC_ONLY').length;
   const overallRate = allTotal > 0 ? Math.round((allEc / allTotal) * 100) : 0;
   const lhEc = document.getElementById('lh-ec-val');
-  if (lhEc) lhEc.textContent = overallRate + '%';
+  if (lhEc) lhEc.textContent = overallRate + '% recovered';
 }
 
 // ── Restatement cascade chart (from BatchLog) ─────────────────
@@ -1015,9 +1209,17 @@ function renderRestatementChart() {
       const dropped= dates.map(d => byDate[d].dropped);
 
       // Update lift hook restatement total
-      const totalSent = sent.reduce((a,b) => a+b, 0);
+      // Last 7 days restatements for lift hook
+      const sevenDaysAgo = new Date(Date.now() - 7*86400000);
+      let last7sent = 0;
+      lines.forEach(line => {
+        const cols = line.split(',');
+        const ts   = cols[0] ? cols[0].replace(/"/g,'').trim() : '';
+        const proc = parseInt(cols[2])||0;
+        if (ts && new Date(ts) >= sevenDaysAgo) last7sent += proc;
+      });
       const lhR = document.getElementById('lh-restate-val');
-      if (lhR) lhR.textContent = totalSent;
+      if (lhR) lhR.textContent = last7sent + ' corrections';
 
       if (restateChartInstance) { restateChartInstance.destroy(); restateChartInstance = null; }
       const canvas = document.getElementById('restateChart');
@@ -1065,10 +1267,9 @@ function chartColors() {
   };
 }
 
-function initCplChart(weeklyCpl) {
+function initCplChart(weeklyCpl, weeklyLeads) {
   const labels = ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'];
 
-  // Split at first non-null in second half to show before/after
   const splitAt = 5;
   const before  = weeklyCpl
     ? weeklyCpl.map((v,i) => i <= splitAt ? v : null)
@@ -1076,32 +1277,44 @@ function initCplChart(weeklyCpl) {
   const after   = weeklyCpl
     ? weeklyCpl.map((v,i) => i >= splitAt ? v : null)
     : [null,null,null,null,null,590,560,530,510,488,472,468];
+  const leads   = weeklyLeads
+    ? weeklyLeads
+    : [42,38,45,41,44,null,51,58,67,72,79,84];
 
   if (cplChartInstance) { cplChartInstance.destroy(); cplChartInstance = null; }
 
-  // Milestone vertical lines plugin
+  // Milestone plugin — date-anchored labels
+  // W6=ScaleX(index 5), EC=May 9(index 7), v9.1=May 12(index 9), v10=May 16(index 10)
   const milestones = [
-    { index:5, label:'ScaleX', color:'rgba(0,212,170,0.6)' },
-    { index:7, label:'EC Live', color:'rgba(167,139,250,0.5)' },
-    { index:9, label:'v9.1', color:'rgba(76,159,255,0.45)' },
-    { index:10, label:'v10', color:'rgba(251,191,36,0.45)' }
+    { index:5,  label:'ScaleX',  desc:'Server-side activation',       color:'rgba(0,212,170,0.7)' },
+    { index:7,  label:'EC Live', desc:'Enhanced Conversions active',   color:'rgba(167,139,250,0.65)' },
+    { index:9,  label:'v9.1',    desc:'5-action structure · May 12',   color:'rgba(76,159,255,0.6)' },
+    { index:10, label:'v10',     desc:'RESTATEMENT cascade · May 16',  color:'rgba(251,191,36,0.65)' }
   ];
+
   const milestonePlugin = {
     id:'milestones',
     afterDraw(chart) {
       const { ctx, chartArea:{ top, bottom }, scales:{ x } } = chart;
       milestones.forEach(m => {
+        if (m.index >= labels.length) return;
         const xPos = x.getPixelForValue(m.index);
         ctx.save();
         ctx.beginPath();
-        ctx.setLineDash([4,3]);
+        ctx.setLineDash([3,3]);
         ctx.strokeStyle = m.color;
         ctx.lineWidth = 1.5;
-        ctx.moveTo(xPos, top);
+        ctx.moveTo(xPos, top + 14);
         ctx.lineTo(xPos, bottom);
         ctx.stroke();
         ctx.setLineDash([]);
-        ctx.font = "9px 'IBM Plex Mono'";
+        // Label background pill
+        ctx.font = "bold 8px 'IBM Plex Mono'";
+        const tw = ctx.measureText(m.label).width + 6;
+        ctx.fillStyle = m.color.replace(/[\d.]+\)$/, '0.15)');
+        ctx.beginPath();
+        ctx.roundRect ? ctx.roundRect(xPos - tw/2, top + 2, tw, 11, 3) : ctx.rect(xPos-tw/2, top+2, tw, 11);
+        ctx.fill();
         ctx.fillStyle = m.color;
         ctx.textAlign = 'center';
         ctx.fillText(m.label, xPos, top + 10);
@@ -1116,27 +1329,42 @@ function initCplChart(weeklyCpl) {
     data: {
       labels,
       datasets: [
-        { label:'Before ScaleX', data:before,
-          borderColor:'#52525B', borderWidth:2, borderDash:[4,3],
-          pointBackgroundColor:'#52525B', pointRadius:3, tension:0.3, spanGaps:false },
-        { label:'After ScaleX', data:after,
+        { label:'Before ScaleX (CPL)', data:before, yAxisID:'y',
+          borderColor:'rgba(82,82,91,0.6)', borderWidth:2, borderDash:[4,3],
+          pointBackgroundColor:'rgba(82,82,91,0.6)', pointRadius:3, tension:0.3, spanGaps:false },
+        { label:'After ScaleX (CPL)', data:after, yAxisID:'y',
           borderColor:'#00D4AA', borderWidth:2,
           pointBackgroundColor:'#00D4AA', pointRadius:3, tension:0.3, spanGaps:false,
-          fill:{target:'origin',above:'rgba(0,212,170,0.04)'} }
+          fill:{target:'origin',above:'rgba(0,212,170,0.04)'} },
+        { label:'Leads volume', data:leads, yAxisID:'y2',
+          borderColor:'rgba(76,159,255,0.5)', borderWidth:1.5, borderDash:[2,2],
+          pointBackgroundColor:'rgba(76,159,255,0.5)', pointRadius:2, tension:0.4,
+          spanGaps:true }
       ]
     },
     options: {
       responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
       plugins: {
-        legend:{ labels:{ color:chartColors().text4, font:{family:"'IBM Plex Mono'",size:10}, boxWidth:12 } },
-        tooltip:{ backgroundColor:chartColors().bg2, borderColor:chartColors().border, borderWidth:1,
+        legend:{ labels:{ color:chartColors().text4, font:{family:"'IBM Plex Mono'",size:9}, boxWidth:10, padding:10 } },
+        tooltip:{
+          backgroundColor:chartColors().bg2, borderColor:chartColors().border, borderWidth:1,
           titleColor:chartColors().text, bodyColor:chartColors().text4,
-          callbacks:{label: ctx => ctx.raw ? '₹'+ctx.raw : 'N/A'} }
+          callbacks:{
+            label: ctx => {
+              if (ctx.dataset.yAxisID === 'y2') return 'Leads: ' + (ctx.raw||'—');
+              return ctx.datasetIndex === 0 ? 'Before: ₹'+(ctx.raw||'—') : 'After: ₹'+(ctx.raw||'—');
+            }
+          }
+        }
       },
       scales: {
-        x:{ grid:{color:chartColors().grid}, ticks:{color:chartColors().text4,font:{family:"'IBM Plex Mono'",size:10}} },
-        y:{ grid:{color:chartColors().grid},
-          ticks:{color:'#52525B',font:{family:"'IBM Plex Mono'",size:10},callback:v=>'₹'+v} }
+        x:{ grid:{color:chartColors().grid}, ticks:{color:chartColors().text4,font:{family:"'IBM Plex Mono'",size:9}} },
+        y:{ position:'left', grid:{color:chartColors().grid},
+          ticks:{color:chartColors().text4,font:{family:"'IBM Plex Mono'",size:9},callback:v=>'₹'+v} },
+        y2:{ position:'right', grid:{display:false},
+          ticks:{color:'rgba(76,159,255,0.6)',font:{family:"'IBM Plex Mono'",size:9}},
+          title:{display:true,text:'Leads',color:'rgba(76,159,255,0.5)',font:{size:9}} }
       }
     }
   });
@@ -1160,10 +1388,10 @@ async function loadData() {
     if (gads.status === 'fulfilled') {
       gadsData = gads.value;
       renderGadsKPIs(gadsData);
-      initCplChart(gadsData.weekly_cpl);
+      initCplChart(gadsData.weekly_cpl, gadsData.weekly_leads || null);
     } else {
       console.warn('Google Ads fetch failed:', gads.reason);
-      initCplChart(null); // fallback to sample data
+      initCplChart(null, null); // fallback to sample data
     }
 
     const now = new Date().toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'});
@@ -1189,9 +1417,9 @@ function toggleTheme() {
   document.getElementById('theme-icon-dark').style.display  = isDark ? 'none'  : '';
   document.getElementById('theme-icon-light').style.display = isDark ? ''      : 'none';
   // Redraw charts with new grid colour
-  if (cplChartInstance)     { initCplChart(gadsData?.weekly_cpl || null); }
+  if (cplChartInstance)     { initCplChart(gadsData?.weekly_cpl || null, gadsData?.weekly_leads || null); }
   if (ecTrendChartInstance) { renderECTrend(allRows); }
-  if (stageChart)           { renderStageChart(filterByPeriod(allRows, activeDays)); }
+  renderSignalFlow(filterByPeriod(allRows, activeDays));
   if (restateChartInstance) { renderRestatementChart(); }
 }
 
@@ -1207,7 +1435,7 @@ function toggleTheme() {
   }
 })();
 
-initCplChart(null); // renders with sample data until gads loads
+initCplChart(null, null); // renders with sample data until gads loads
 loadData();
 setInterval(loadData, REFRESH_MS);
 </script>
