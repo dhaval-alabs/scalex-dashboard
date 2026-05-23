@@ -99,6 +99,31 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .camp-stat-val{font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#FAFAFA}
 .camp-stat-delta{font-size:0.68rem;font-weight:500;padding:1px 5px;border-radius:3px}
 .camp-stat-delta.good{color:var(--green);background:rgba(52,211,153,0.1)}
+.lift-hook{display:flex;align-items:center;gap:0;background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--teal);border-radius:0 var(--radius2) var(--radius2) 0;padding:0.75rem 1.25rem;margin-bottom:1.25rem;flex-wrap:wrap;gap:0}
+.lift-stat{display:flex;flex-direction:column;align-items:center;padding:0 1.25rem;gap:0.2rem}
+.lift-stat:first-child{padding-left:0}
+.lift-val{font-family:'IBM Plex Mono',monospace;font-size:1.4rem;font-weight:700;color:var(--teal);line-height:1}
+.lift-label{font-size:0.68rem;color:var(--text4);text-align:center;white-space:nowrap}
+.lift-divider{width:1px;height:2.5rem;background:var(--border2);flex-shrink:0}
+
+.signal-flow-panel{display:grid;grid-template-columns:2fr 1.8fr 1.4fr;gap:10px;margin-bottom:1.25rem}
+.sf-col{min-width:0}
+
+.ops-strip{display:flex;align-items:center;gap:0.5rem;padding:0.6rem 1rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);margin-bottom:1.25rem;flex-wrap:wrap}
+.ops-label{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text4);margin-right:0.25rem;white-space:nowrap}
+.ops-item{display:flex;align-items:center;gap:0.3rem}
+.ops-key{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--text4)}
+.ops-val{font-family:'IBM Plex Mono',monospace;font-size:0.75rem;font-weight:600;color:#FAFAFA}
+.ops-unit{font-size:0.62rem;color:var(--text4)}
+.ops-sep{color:var(--border2);font-size:0.75rem;margin:0 0.15rem}
+.ops-badge{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;padding:2px 7px;border-radius:3px;border:1px solid var(--border2);color:var(--purple)}
+
+@media(max-width:768px){
+  .signal-flow-panel{grid-template-columns:1fr}
+  .lift-stat{padding:0 0.75rem}
+  .lift-val{font-size:1.1rem}
+}
+
 .dash-footer{padding:0.4rem 1.5rem;border-top:1px solid var(--border);display:flex;flex-wrap:nowrap;justify-content:space-between;align-items:center;font-size:0.67rem;color:var(--text4);gap:1rem}
 .dash-footer .footer-left{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .footer-brand{font-family:'IBM Plex Mono',monospace;color:var(--teal);letter-spacing:0.08em;font-size:0.67rem;flex-shrink:0;white-space:nowrap}
@@ -233,6 +258,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         <button class="period-btn" onclick="setPeriod(7,this)">7D</button>
         <button class="period-btn active" onclick="setPeriod(30,this)">30D</button>
         <button class="period-btn" onclick="setPeriod(90,this)">90D</button>
+        <button class="period-btn" onclick="setPeriod('scalex',this)">Since W6</button>
         <button class="period-btn" onclick="toggleCustomDate(this)">Custom</button>
         <div class="date-picker-wrap" id="date-picker-wrap">
           <input type="date" id="date-from" />
@@ -248,11 +274,37 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
     </div>
 
     <div class="content">
-      <div class="alert-banner">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--teal);flex-shrink:0"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
-        <div class="alert-text">
-          <strong>+345 incremental leads</strong> this period on same budget · CPL dropped ₹599 → ₹468 · Bangalore campaign CPL −58%, leads +255%
+      <div class="lift-hook" id="lift-hook">
+        <div class="lift-stat" id="lh-cpl">
+          <div class="lift-val" id="lh-cpl-val">−22%</div>
+          <div class="lift-label">CPL reduction</div>
         </div>
+        <div class="lift-divider"></div>
+        <div class="lift-stat" id="lh-leads">
+          <div class="lift-val" id="lh-leads-val">+38%</div>
+          <div class="lift-label">more leads · same budget</div>
+        </div>
+        <div class="lift-divider"></div>
+        <div class="lift-stat" id="lh-ec">
+          <div class="lift-val" id="lh-ec-val">—</div>
+          <div class="lift-label">EC recovery rate</div>
+        </div>
+        <div class="lift-divider"></div>
+        <div class="lift-stat" id="lh-restate">
+          <div class="lift-val" id="lh-restate-val">—</div>
+          <div class="lift-label">restatements sent</div>
+        </div>
+      </div>
+
+      <div class="chart-card" style="margin-bottom:1.25rem">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">EC Recovery — Daily</div>
+            <div class="chart-sub">% of conversions recovered via Enhanced Conversions (no GCLID, matched email/phone)</div>
+          </div>
+          <div class="live-tag"><div class="live-dot"></div>live</div>
+        </div>
+        <div style="position:relative;height:140px"><canvas id="ecTrendChart"></canvas></div>
       </div>
 
       <div class="kpi-grid">
@@ -311,30 +363,37 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         </div>
       </div>
 
-      <div class="bottom-grid">
-        <div class="chart-card">
+      <!-- Signal Flow panel -->
+      <div class="signal-flow-panel">
+        <div class="chart-card sf-col sf-funnel">
           <div class="chart-header">
             <div>
-              <div class="chart-title">Lead Funnel by Stage</div>
-              <div class="chart-sub">All stage changes · live from log</div>
+              <div class="chart-title">Lead Funnel</div>
+              <div class="chart-sub">Stage distribution · live</div>
             </div>
             <div class="live-tag"><div class="live-dot"></div>live</div>
           </div>
           <div id="funnel-stages"><div class="empty-state">Loading…</div></div>
         </div>
-
-        <div class="chart-card">
+        <div class="chart-card sf-col sf-feed">
           <div class="chart-header">
             <div>
               <div class="chart-title">Live CRM Events</div>
-              <div class="chart-sub">Recent stage changes via sGTM</div>
+              <div class="chart-sub">Recent stage changes · sGTM</div>
             </div>
             <div class="live-tag"><div class="live-dot"></div>live</div>
           </div>
           <div id="feed-list"><div class="empty-state">Loading…</div></div>
         </div>
-
-
+        <div class="chart-card sf-col sf-restate">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Restatement Cascade</div>
+              <div class="chart-sub">Daily · sent vs dropped</div>
+            </div>
+          </div>
+          <div style="position:relative;height:200px"><canvas id="restateChart"></canvas></div>
+        </div>
       </div>
     </div>
 
@@ -352,45 +411,32 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         </div>
       </div>
 
-      <!-- ── Pipeline Health ── -->
-      <div style="display:flex;align-items:center;gap:0.75rem;margin:1.5rem 0 1rem">
-        <span style="font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text4);white-space:nowrap">Pipeline Health</span>
-        <div style="flex:1;height:1px;background:var(--border)"></div>
-        <span style="font-family:'IBM Plex Mono',monospace;font-size:0.58rem;padding:2px 6px;border-radius:3px;border:1px solid var(--border2);color:var(--text4)">v10 · live</span>
-      </div>
-
-      <!-- EC Recovery callout -->
-      <div id="ec-callout" style="display:none;background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--purple);border-radius:0 var(--radius2) var(--radius2) 0;padding:0.85rem 1rem;margin-bottom:1.25rem">
-        <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
-          <div id="ec-rate" style="font-family:'IBM Plex Mono',monospace;font-size:2rem;font-weight:600;color:var(--purple);line-height:1;flex-shrink:0">—</div>
-          <div>
-            <div style="font-size:0.82rem;font-weight:600;color:#FAFAFA">EC Recovery Rate</div>
-            <div style="font-size:0.7rem;color:var(--text3);margin-top:2px" id="ec-sub">Conversions recovered via Enhanced Conversions (no GCLID, matched by email/phone)</div>
-          </div>
+      <!-- ── Ops heartbeat strip ── -->
+      <div class="ops-strip" id="ops-strip">
+        <span class="ops-label">System</span>
+        <div class="ops-item">
+          <span class="ops-key">Queue</span>
+          <span class="ops-val" id="ph-queue">…</span>
+          <span class="ops-unit">pending</span>
         </div>
-      </div>
-
-      <!-- Pipeline tiles -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.25rem" id="pipeline-tiles">
-        <div class="chart-card">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text4);margin-bottom:0.4rem">Adj. Queue Depth</div>
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:1.3rem;font-weight:600;color:#FAFAFA" id="ph-queue">—</div>
-          <div style="font-size:0.65rem;color:var(--text4);margin-top:0.3rem">pending restatements</div>
+        <div class="ops-sep">·</div>
+        <div class="ops-item">
+          <span class="ops-key">Batch</span>
+          <span class="ops-val" id="ph-batch">…</span>
+          <span class="ops-unit" id="ph-batch-sub"></span>
         </div>
-        <div class="chart-card">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text4);margin-bottom:0.4rem">Batch Run</div>
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:1rem;font-weight:600;color:#FAFAFA" id="ph-batch">—</div>
-          <div style="font-size:0.65rem;color:var(--text4);margin-top:0.3rem" id="ph-batch-sub">loading…</div>
+        <div class="ops-sep">·</div>
+        <div class="ops-item">
+          <span class="ops-key">Errors 24h</span>
+          <span class="ops-val" id="ph-errors">…</span>
+          <span class="ops-unit" id="ph-errors-sub"></span>
         </div>
-        <div class="chart-card">
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text4);margin-bottom:0.4rem">Pipeline Errors (24h)</div>
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:1.3rem;font-weight:600;color:#FAFAFA" id="ph-errors">—</div>
-          <div style="font-size:0.65rem;color:var(--text4);margin-top:0.3rem" id="ph-errors-sub">loading…</div>
-        </div>
+        <div class="ops-sep" style="margin-left:auto">·</div>
+        <span class="ops-badge" id="ph-ec-badge">EC: —</span>
       </div>
 
       <div class="dash-footer">
-        <div class="footer-left">Live data: Google Sheets log · sGTM (GTM-NL8L86MW) · Apps Script v10.2 (v17) · LSQ CRM · auto-refreshes every 60s</div>
+        <div class="footer-left">Live data: Google Sheets log · sGTM (GTM-NL8L86MW) · Apps Script v10.2 (v18) · LSQ CRM · auto-refreshes every 60s</div>
         <div class="footer-brand">powered by scaletrix.ai</div>
       </div>
     </div>
@@ -510,6 +556,14 @@ function splitCSVLine(line) {
 }
 
 function filterByPeriod(rows, days) {
+  if (days === 'scalex') {
+    const scalexStart = new Date('2026-05-09T00:00:00');
+    return rows.filter(r => { const d = new Date(r.timestamp); return !isNaN(d) && d >= scalexStart; });
+  }
+  if (!days || customDateRange) {
+    const { from, to } = customDateRange || {};
+    return rows.filter(r => { const d = new Date(r.timestamp); return !isNaN(d) && (!from || d >= from) && (!to || d <= to); });
+  }
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - days);
   return rows.filter(r => {
@@ -524,7 +578,9 @@ function renderAll() {
   renderFunnel(rows);
   renderFeed(allRows);
   renderStageChart(rows);
-  renderPipelineHealth(allRows);
+  renderECTrend(allRows);
+  renderOpsStrip(allRows);
+  renderRestatementChart();
 }
 
 function renderKPIs(rows) {
@@ -682,6 +738,16 @@ function renderGadsKPIs(data) {
   document.getElementById('kpi-spend-sub').textContent =
     '₹' + data.total_spend.toLocaleString('en-IN') + ' total spend';
 
+  // Update lift hook CPL + leads stats from real Google Ads data
+  if (data.cpl_change_pct !== undefined) {
+    const lhCpl = document.getElementById('lh-cpl-val');
+    if (lhCpl) lhCpl.textContent = (data.cpl_change_pct > 0 ? '+' : '') + data.cpl_change_pct + '%';
+  }
+  if (data.conv_change_pct !== undefined) {
+    const lhLeads = document.getElementById('lh-leads-val');
+    if (lhLeads) lhLeads.textContent = (data.conv_change_pct > 0 ? '+' : '') + data.conv_change_pct + '%';
+  }
+
   if (data.campaigns) renderCampaigns(data.campaigns, data.cpl);
 }
 
@@ -765,88 +831,192 @@ function renderCampaigns(campaigns, avgCpl) {
 let cplChartInstance = null;
 
 
-// ── Pipeline Health ──────────────────────────────────────────
-function renderPipelineHealth(rows) {
-  // ── EC Recovery Rate (from log sheet) ────────────────────
-  const period  = filterByPeriod(rows, activeDays);
-  const success = period.filter(r => r.status === 'SUCCESS').length;
-  const ecOnly  = period.filter(r => r.status === 'SUCCESS_EC_ONLY').length;
+// ── Ops heartbeat strip ───────────────────────────────────────
+function renderOpsStrip(rows) {
+  // EC rate for badge
+  const success = rows.filter(r => r.status === 'SUCCESS').length;
+  const ecOnly  = rows.filter(r => r.status === 'SUCCESS_EC_ONLY').length;
   const total   = success + ecOnly;
   const ecRate  = total > 0 ? Math.round((ecOnly / total) * 100) : 0;
+  const ecBadge = document.getElementById('ph-ec-badge');
+  if (ecBadge) ecBadge.textContent = 'EC: ' + ecRate + '%';
 
-  const ecCallout = document.getElementById('ec-callout');
-  if (total > 0) {
-    document.getElementById('ec-rate').textContent = ecRate + '%';
-    document.getElementById('ec-sub').textContent =
-      ecOnly + ' of ' + total + ' conversions recovered via EC · would have been lost without Enhanced Conversions for Leads';
-    ecCallout.style.display = 'block';
+  // Errors 24h
+  const cutoff24 = new Date(Date.now() - 86400000);
+  const recent   = rows.filter(r => new Date(r.timestamp) >= cutoff24);
+  const errorStatuses = ['SKIP_UNKNOWN_STAGE','FIRESTORE_FAIL','HTTP_503'];
+  const errorCount = recent.filter(r => errorStatuses.includes(r.status)).length;
+  const errEl  = document.getElementById('ph-errors');
+  const errSub = document.getElementById('ph-errors-sub');
+  if (errEl) { errEl.textContent = errorCount; errEl.style.color = errorCount > 0 ? 'var(--amber)' : 'var(--green)'; }
+  if (errSub) errSub.textContent = errorCount > 0 ? '⚠' : '✓';
+
+  // Adj Queue depth (Firestore)
+  const ph_queue = document.getElementById('ph-queue');
+  if (ph_queue) {
+    fetch(FIRESTORE_URL)
+      .then(r => r.json())
+      .then(data => {
+        const pending = (data.documents||[]).filter(d => {
+          const s = d.fields && d.fields.status && d.fields.status.stringValue;
+          return s === 'pending';
+        }).length;
+        ph_queue.textContent = pending;
+        ph_queue.style.color = pending > 5 ? 'var(--amber)' : 'var(--green)';
+      })
+      .catch(() => { ph_queue.textContent = '—'; });
   }
 
-  // ── Pipeline Errors 24h (from log sheet) ─────────────────
-  // GADS_PARTIAL_FAIL is NOT an error — test GCLIDs cause it, real leads go through fine
-  const cutoff24    = new Date(Date.now() - 86400000);
-  const recent      = rows.filter(r => new Date(r.timestamp) >= cutoff24);
-  const errorStatuses = ['SKIP_UNKNOWN_STAGE','FIRESTORE_FAIL','HTTP_503'];
-  const errorCount  = recent.filter(r => errorStatuses.includes(r.status)).length;
-  const errEl       = document.getElementById('ph-errors');
-  const errSub      = document.getElementById('ph-errors-sub');
-  errEl.textContent = errorCount;
-  errEl.style.color = errorCount > 0 ? 'var(--amber)' : 'var(--green)';
-  errSub.textContent = errorCount > 0 ? 'review log sheet' : 'all clear';
-
-  // ── Adj Queue depth (live from Firestore) ─────────────────
-  const ph_queue = document.getElementById('ph-queue');
-  ph_queue.textContent = '…';
-  fetch(FIRESTORE_URL)
-    .then(r => r.json())
-    .then(data => {
-      const docs    = data.documents || [];
-      const pending = docs.filter(d => {
-        const s = d.fields && d.fields.status && d.fields.status.stringValue;
-        return s === 'pending';
-      }).length;
-      ph_queue.textContent = pending;
-      ph_queue.style.color = pending > 5 ? 'var(--amber)' : 'var(--green)';
-    })
-    .catch(() => { ph_queue.textContent = '—'; });
-
-  // ── Batch Run status (from BatchLog sheet) ────────────────
+  // Batch Run (BatchLog)
   const ph_batch     = document.getElementById('ph-batch');
   const ph_batch_sub = document.getElementById('ph-batch-sub');
-  ph_batch.textContent     = '…';
-  ph_batch_sub.textContent = 'loading…';
-
+  if (!ph_batch) return;
   fetch(BATCHLOG_URL + '&t=' + Date.now())
     .then(r => r.text())
     .then(csv => {
       const lines = csv.trim().split('\n').filter(l => l.trim());
       if (lines.length < 2) { ph_batch.textContent = '—'; return; }
-      // Last row (skip header)
       const last   = lines[lines.length - 1].split(',');
       const ts     = last[0] ? last[0].replace(/"/g,'').trim() : '';
       const status = last[1] ? last[1].replace(/"/g,'').trim() : '';
       const proc   = last[2] ? last[2].replace(/"/g,'').trim() : '0';
-      const drop   = last[3] ? last[3].replace(/"/g,'').trim() : '0';
-
       if (!ts) { ph_batch.textContent = '—'; return; }
-
       const runTime  = new Date(ts);
       const hoursAgo = (Date.now() - runTime) / 3600000;
       const isStale  = hoursAgo > 26;
-
-      ph_batch.textContent = status === 'EMPTY'
-        ? 'EMPTY'
-        : status + ' · ' + proc + ' sent';
-      ph_batch.style.color = isStale ? 'var(--coral)' :
-                             (status === 'SUCCESS' || status === 'EMPTY' || status === 'PARTIAL_FAIL')
-                             ? 'var(--green)' : 'var(--amber)';
-
-      const dateStr = runTime.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
-      const timeStr = runTime.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-      ph_batch_sub.textContent = dateStr + ' · ' + timeStr
-        + (isStale ? ' · ⚠ stale' : ' · ' + Math.round(hoursAgo) + 'h ago');
+      ph_batch.textContent = status === 'EMPTY' ? 'EMPTY' : status + ' · ' + proc + ' sent';
+      ph_batch.style.color = isStale ? 'var(--coral)' : (status === 'SUCCESS' || status === 'EMPTY') ? 'var(--green)' : 'var(--amber)';
+      if (ph_batch_sub) ph_batch_sub.textContent = Math.round(hoursAgo) + 'h ago' + (isStale ? ' ⚠' : '');
     })
-    .catch(() => { ph_batch.textContent = '—'; ph_batch_sub.textContent = 'unavailable'; });
+    .catch(() => { ph_batch.textContent = '—'; });
+}
+
+// ── EC Recovery trend chart ───────────────────────────────────
+let ecTrendChartInstance = null;
+function renderECTrend(rows) {
+  // Group by calendar date
+  const byDate = {};
+  rows.forEach(r => {
+    if (r.status !== 'SUCCESS' && r.status !== 'SUCCESS_EC_ONLY') return;
+    const d = new Date(r.timestamp);
+    if (isNaN(d)) return;
+    const key = d.toISOString().split('T')[0];
+    if (!byDate[key]) byDate[key] = { ec: 0, total: 0 };
+    byDate[key].total++;
+    if (r.status === 'SUCCESS_EC_ONLY') byDate[key].ec++;
+  });
+  const dates  = Object.keys(byDate).sort();
+  const labels = dates.map(d => {
+    const dt = new Date(d);
+    return dt.toLocaleDateString('en-IN', { day:'numeric', month:'short' });
+  });
+  const rates  = dates.map(d => byDate[d].total > 0 ? Math.round((byDate[d].ec / byDate[d].total) * 100) : 0);
+
+  if (ecTrendChartInstance) { ecTrendChartInstance.destroy(); ecTrendChartInstance = null; }
+  const canvas = document.getElementById('ecTrendChart');
+  if (!canvas) return;
+  if (!dates.length) { canvas.parentElement.innerHTML = '<div class="empty-state" style="padding:2rem 0">No conversion data yet</div>'; return; }
+
+  ecTrendChartInstance = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'EC Recovery %',
+        data: rates,
+        borderColor: '#A78BFA',
+        borderWidth: 2,
+        pointBackgroundColor: '#A78BFA',
+        pointRadius: 3,
+        tension: 0.4,
+        fill: { target: 'origin', above: 'rgba(167,139,250,0.07)' }
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor:'#18181B', borderColor:'#27272A', borderWidth:1,
+          titleColor:'#FAFAFA', bodyColor:'#A1A1AA',
+          callbacks: { label: ctx => ctx.raw + '% EC recovery · ' + (byDate[dates[ctx.dataIndex]]?.ec||0) + ' of ' + (byDate[dates[ctx.dataIndex]]?.total||0) } }
+      },
+      scales: {
+        x: { grid:{color:'rgba(255,255,255,0.03)'}, ticks:{color:'#52525B',font:{family:"'IBM Plex Mono'",size:9}} },
+        y: { min:0, max:100, grid:{color:'rgba(255,255,255,0.03)'},
+          ticks:{color:'#52525B',font:{family:"'IBM Plex Mono'",size:9},callback:v=>v+'%'} }
+      }
+    }
+  });
+
+  // Update lift hook EC stat
+  const allEc    = rows.filter(r => r.status === 'SUCCESS_EC_ONLY').length;
+  const allTotal = rows.filter(r => r.status === 'SUCCESS' || r.status === 'SUCCESS_EC_ONLY').length;
+  const overallRate = allTotal > 0 ? Math.round((allEc / allTotal) * 100) : 0;
+  const lhEc = document.getElementById('lh-ec-val');
+  if (lhEc) lhEc.textContent = overallRate + '%';
+}
+
+// ── Restatement cascade chart (from BatchLog) ─────────────────
+let restateChartInstance = null;
+function renderRestatementChart() {
+  fetch(BATCHLOG_URL + '&t=' + Date.now())
+    .then(r => r.text())
+    .then(csv => {
+      const lines = csv.trim().split('\n').filter(l => l.trim()).slice(1); // skip header
+      // Group by date — take last run per day
+      const byDate = {};
+      lines.forEach(line => {
+        const cols   = line.split(',');
+        const ts     = cols[0] ? cols[0].replace(/"/g,'').trim() : '';
+        const status = cols[1] ? cols[1].replace(/"/g,'').trim() : '';
+        const proc   = parseInt(cols[2])||0;
+        const drop   = parseInt(cols[3])||0;
+        if (!ts) return;
+        const d = new Date(ts);
+        if (isNaN(d)) return;
+        const key = d.toISOString().split('T')[0];
+        if (!byDate[key]) byDate[key] = { sent: 0, dropped: 0 };
+        byDate[key].sent    += proc;
+        byDate[key].dropped += drop;
+      });
+      const dates  = Object.keys(byDate).sort();
+      const labels = dates.map(d => { const dt=new Date(d); return dt.toLocaleDateString('en-IN',{day:'numeric',month:'short'}); });
+      const sent   = dates.map(d => byDate[d].sent);
+      const dropped= dates.map(d => byDate[d].dropped);
+
+      // Update lift hook restatement total
+      const totalSent = sent.reduce((a,b) => a+b, 0);
+      const lhR = document.getElementById('lh-restate-val');
+      if (lhR) lhR.textContent = totalSent;
+
+      if (restateChartInstance) { restateChartInstance.destroy(); restateChartInstance = null; }
+      const canvas = document.getElementById('restateChart');
+      if (!canvas) return;
+      if (!dates.length) { canvas.parentElement.innerHTML = '<div class="empty-state" style="padding:2rem 0">No batch data yet</div>'; return; }
+
+      restateChartInstance = new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label:'Sent to Google', data:sent, backgroundColor:'rgba(0,212,170,0.7)', borderRadius:3 },
+            { label:'Dropped (no GCLID)', data:dropped, backgroundColor:'rgba(82,82,91,0.5)', borderRadius:3 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: { position:'bottom', labels:{color:'#52525B',font:{family:"'IBM Plex Mono'",size:9},boxWidth:10,padding:6} },
+            tooltip: { backgroundColor:'#18181B', borderColor:'#27272A', borderWidth:1, titleColor:'#FAFAFA', bodyColor:'#A1A1AA' }
+          },
+          scales: {
+            x: { stacked:true, grid:{display:false}, ticks:{color:'#52525B',font:{family:"'IBM Plex Mono'",size:9}} },
+            y: { stacked:true, grid:{color:'rgba(255,255,255,0.03)'}, ticks:{color:'#52525B',font:{family:"'IBM Plex Mono'",size:9}} }
+          }
+        }
+      });
+    })
+    .catch(err => console.warn('BatchLog fetch failed:', err));
 }
 
 function initCplChart(weeklyCpl) {
@@ -863,8 +1033,40 @@ function initCplChart(weeklyCpl) {
 
   if (cplChartInstance) { cplChartInstance.destroy(); cplChartInstance = null; }
 
+  // Milestone vertical lines plugin
+  const milestones = [
+    { index:5, label:'ScaleX', color:'rgba(0,212,170,0.6)' },
+    { index:7, label:'EC Live', color:'rgba(167,139,250,0.5)' },
+    { index:9, label:'v9.1', color:'rgba(76,159,255,0.45)' },
+    { index:10, label:'v10', color:'rgba(251,191,36,0.45)' }
+  ];
+  const milestonePlugin = {
+    id:'milestones',
+    afterDraw(chart) {
+      const { ctx, chartArea:{ top, bottom }, scales:{ x } } = chart;
+      milestones.forEach(m => {
+        const xPos = x.getPixelForValue(m.index);
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([4,3]);
+        ctx.strokeStyle = m.color;
+        ctx.lineWidth = 1.5;
+        ctx.moveTo(xPos, top);
+        ctx.lineTo(xPos, bottom);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.font = "9px 'IBM Plex Mono'";
+        ctx.fillStyle = m.color;
+        ctx.textAlign = 'center';
+        ctx.fillText(m.label, xPos, top + 10);
+        ctx.restore();
+      });
+    }
+  };
+
   cplChartInstance = new Chart(document.getElementById('cplChart'), {
     type: 'line',
+    plugins: [milestonePlugin],
     data: {
       labels,
       datasets: [
