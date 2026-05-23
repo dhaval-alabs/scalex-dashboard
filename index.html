@@ -15,7 +15,7 @@
   --teal:#00D4AA;--teal-dim:rgba(0,212,170,0.12);--teal-dim2:rgba(0,212,170,0.06);
   --blue:#4C9FFF;--purple:#A78BFA;--amber:#FBBF24;--coral:#FF6B4A;
   --red:#EF4444;--green:#34D399;
-  --chart-grid:rgba(255,255,255,0.04);
+  --chart-grid:rgba(255,255,255,0.025);
 }
 [data-theme="light"]{
   --bg:#F4F4F6;--bg2:#FFFFFF;--bg3:#EAEAEF;
@@ -68,13 +68,20 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .alert-text{font-size:0.82rem;color:var(--teal)}
 .alert-text strong{font-weight:600}
 .kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:1.25rem}
-.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:0.9rem 1rem;position:relative;overflow:hidden}
-.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:0.9rem 1rem;position:relative;overflow:hidden;transition:border-color 0.2s}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;z-index:1}
+.kpi::after{content:'';position:absolute;top:0;right:0;width:80px;height:80px;border-radius:50%;opacity:0.07;pointer-events:none}
 .kpi.teal::before{background:var(--teal)}
+.kpi.teal::after{background:radial-gradient(circle,#00D4AA,transparent 70%);transform:translate(20px,-30px)}
 .kpi.blue::before{background:var(--blue)}
+.kpi.blue::after{background:radial-gradient(circle,#4C9FFF,transparent 70%);transform:translate(20px,-30px)}
 .kpi.purple::before{background:var(--purple)}
+.kpi.purple::after{background:radial-gradient(circle,#A78BFA,transparent 70%);transform:translate(20px,-30px)}
 .kpi.amber::before{background:var(--amber)}
+.kpi.amber::after{background:radial-gradient(circle,#FBBF24,transparent 70%);transform:translate(20px,-30px)}
 .kpi.green::before{background:var(--green)}
+.kpi.green::after{background:radial-gradient(circle,#34D399,transparent 70%);transform:translate(20px,-30px)}
+.coral-kpi::after{background:radial-gradient(circle,#FF6B4A,transparent 70%);transform:translate(20px,-30px);position:absolute;top:0;right:0;width:80px;height:80px;border-radius:50%;opacity:0.07;pointer-events:none}
 .kpi-label{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text4);margin-bottom:0.5rem}
 .kpi-value{font-family:'IBM Plex Mono',monospace;font-size:1.5rem;font-weight:600;color:#FAFAFA;letter-spacing:-0.02em;line-height:1}
 .kpi-delta{display:inline-flex;align-items:center;gap:0.25rem;font-size:0.72rem;font-weight:500;margin-top:0.5rem;padding:2px 6px;border-radius:3px}
@@ -82,7 +89,8 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .kpi-delta.bad{color:var(--red);background:rgba(239,68,68,0.1)}
 .kpi-sub{font-size:0.72rem;color:var(--text4);margin-top:0.35rem}
 .charts-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:12px;margin-bottom:1.25rem}
-.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:1.25rem}
+.chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:1.25rem;position:relative;overflow:hidden}
+.chart-card::before{content:'';position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(135deg,rgba(255,255,255,0.025) 0%,transparent 60%)}
 .chart-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem}
 .chart-title{font-size:0.88rem;font-weight:600;color:#FAFAFA}
 .chart-sub{font-size:0.72rem;color:var(--text4);margin-top:3px}
@@ -112,17 +120,21 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .camp-stat-val{font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#FAFAFA}
 .camp-stat-delta{font-size:0.68rem;font-weight:500;padding:1px 5px;border-radius:3px}
 .camp-stat-delta.good{color:var(--green);background:rgba(52,211,153,0.1)}
-.lift-hook{display:flex;align-items:center;gap:0;background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--teal);border-radius:0 var(--radius2) var(--radius2) 0;padding:0.75rem 1.25rem;margin-bottom:1.25rem;flex-wrap:wrap;gap:0}
+.lift-hook{display:flex;align-items:center;gap:0;background:linear-gradient(90deg,rgba(0,212,170,0.06) 0%,var(--bg2) 40%);border:1px solid var(--border);border-left:3px solid var(--teal);border-radius:0 var(--radius2) var(--radius2) 0;padding:0.75rem 1.25rem;margin-bottom:1.25rem;flex-wrap:wrap;gap:0}
 .lift-stat{display:flex;flex-direction:column;align-items:center;padding:0 1.25rem;gap:0.2rem}
 .lift-stat:first-child{padding-left:0}
 .lift-val{font-family:'IBM Plex Mono',monospace;font-size:1.4rem;font-weight:700;color:var(--teal);line-height:1}
+#lh-cpl-val{color:var(--green)}
+#lh-leads-val{color:var(--teal)}
+#lh-ec-val{color:var(--purple)}
+#lh-restate-val{color:var(--blue)}
 .lift-label{font-size:0.68rem;color:var(--text4);text-align:center;white-space:nowrap}
 .lift-divider{width:1px;height:2.5rem;background:var(--border2);flex-shrink:0}
 
 .signal-flow-panel{display:grid;grid-template-columns:2fr 1.8fr 1.4fr;gap:10px;margin-bottom:1.25rem}
 .sf-col{min-width:0}
 
-.ops-strip{display:flex;align-items:center;gap:0.5rem;padding:0.6rem 1rem;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);margin-bottom:1.25rem;flex-wrap:wrap}
+.ops-strip{display:flex;align-items:center;gap:0.5rem;padding:0.6rem 1rem;background:linear-gradient(90deg,rgba(167,139,250,0.05),var(--bg2) 50%);border:1px solid var(--border);border-radius:var(--radius2);margin-bottom:1.25rem;flex-wrap:wrap}
 .ops-label{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text4);margin-right:0.25rem;white-space:nowrap}
 .ops-item{display:flex;align-items:center;gap:0.3rem}
 .ops-key{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--text4)}
@@ -148,6 +160,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .camp-table td:first-child{text-align:left;color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:0.78rem;max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .camp-table tr:last-child td{border-bottom:none}
 .camp-table tr:hover td{background:var(--bg3)}
+.camp-table tbody tr:hover td:first-child{color:var(--teal)}
 .cpl-pill{display:inline-block;padding:1px 7px;border-radius:3px;font-size:0.68rem;font-weight:600}
 .cpl-good{background:rgba(52,211,153,0.12);color:var(--green)}
 .cpl-mid{background:rgba(251,191,36,0.12);color:var(--amber)}
@@ -350,7 +363,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
           <div class="kpi-value" id="kpi-match-form">—</div>
           <div class="kpi-sub" id="kpi-match-form-sub">loading…</div>
         </div>
-        <div class="kpi" style="border-top:2px solid var(--coral)">
+        <div class="kpi coral-kpi" style="border-top:2px solid var(--coral)">
           <div class="kpi-label">GCLID · Non-Form</div>
           <div class="kpi-value" id="kpi-match-nonform">—</div>
           <div class="kpi-sub" id="kpi-match-nonform-sub">loading…</div>
@@ -382,7 +395,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 
       <!-- Signal Flow panel -->
       <div class="signal-flow-panel">
-        <div class="chart-card sf-col sf-funnel">
+        <div class="chart-card sf-col sf-funnel" style="border-top:2px solid rgba(0,212,170,0.4)">
           <div class="chart-header">
             <div>
               <div class="chart-title">Lead Funnel</div>
@@ -392,7 +405,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
           </div>
           <div id="funnel-stages"><div class="empty-state">Loading…</div></div>
         </div>
-        <div class="chart-card sf-col sf-feed">
+        <div class="chart-card sf-col sf-feed" style="border-top:2px solid rgba(52,211,153,0.4)">
           <div class="chart-header">
             <div>
               <div class="chart-title">Live CRM Events</div>
@@ -402,7 +415,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
           </div>
           <div id="feed-list"><div class="empty-state">Loading…</div></div>
         </div>
-        <div class="chart-card sf-col sf-restate">
+        <div class="chart-card sf-col sf-restate" style="border-top:2px solid rgba(251,191,36,0.4)">
           <div class="chart-header">
             <div>
               <div class="chart-title">Restatement Cascade</div>
