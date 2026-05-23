@@ -46,7 +46,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 .main{overflow-y:auto;background:var(--bg)}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;border-bottom:1px solid var(--border);background:var(--bg2);position:sticky;top:0;z-index:10}
-.topbar-left h1{font-size:1rem;font-weight:600;color:#FAFAFA;letter-spacing:-0.01em}
+.topbar-left h1{font-size:1rem;font-weight:600;color:var(--text);letter-spacing:-0.01em}
 .topbar-left p{font-size:0.75rem;color:var(--text3);margin-top:1px}
 .topbar-right{display:flex;align-items:center;gap:0.75rem}
 .period-btn{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;padding:4px 10px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer}
@@ -83,16 +83,16 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .kpi.green::after{background:radial-gradient(circle,#34D399,transparent 70%);transform:translate(20px,-30px)}
 .coral-kpi::after{background:radial-gradient(circle,#FF6B4A,transparent 70%);transform:translate(20px,-30px);position:absolute;top:0;right:0;width:80px;height:80px;border-radius:50%;opacity:0.07;pointer-events:none}
 .kpi-label{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text4);margin-bottom:0.5rem}
-.kpi-value{font-family:'IBM Plex Mono',monospace;font-size:1.5rem;font-weight:600;color:#FAFAFA;letter-spacing:-0.02em;line-height:1}
+.kpi-value{font-family:'IBM Plex Mono',monospace;font-size:1.5rem;font-weight:600;color:var(--text);letter-spacing:-0.02em;line-height:1}
 .kpi-delta{display:inline-flex;align-items:center;gap:0.25rem;font-size:0.72rem;font-weight:500;margin-top:0.5rem;padding:2px 6px;border-radius:3px}
 .kpi-delta.good{color:var(--green);background:rgba(52,211,153,0.1)}
 .kpi-delta.bad{color:var(--red);background:rgba(239,68,68,0.1)}
 .kpi-sub{font-size:0.72rem;color:var(--text4);margin-top:0.35rem}
 .charts-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:12px;margin-bottom:1.25rem}
 .chart-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:1.25rem;position:relative;overflow:hidden}
-.chart-card::before{content:'';position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(135deg,rgba(255,255,255,0.025) 0%,transparent 60%)}
+.chart-card::before{content:'';position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(135deg,rgba(128,128,128,0.04) 0%,transparent 60%)}
 .chart-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.25rem}
-.chart-title{font-size:0.88rem;font-weight:600;color:#FAFAFA}
+.chart-title{font-size:0.88rem;font-weight:600;color:var(--text)}
 .chart-sub{font-size:0.72rem;color:var(--text4);margin-top:3px}
 .chart-badge{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;padding:2px 7px;border-radius:3px;border:1px solid var(--border2);color:var(--text3)}
 .live-tag{display:flex;align-items:center;gap:4px;font-size:0.68rem;color:var(--green);font-family:'IBM Plex Mono',monospace}
@@ -109,15 +109,15 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .feed-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px}
 .feed-body{flex:1;min-width:0}
 .feed-event{font-size:0.78rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.feed-event strong{color:#FAFAFA;font-weight:500}
+.feed-event strong{color:var(--text);font-weight:500}
 .feed-meta{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;color:var(--text4);margin-top:2px}
 .feed-value{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;flex-shrink:0;align-self:center}
 .campaign-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:1.25rem}
-.camp-header{font-size:0.88rem;font-weight:600;color:#FAFAFA;margin-bottom:1rem}
+.camp-header{font-size:0.88rem;font-weight:600;color:var(--text);margin-bottom:1rem}
 .camp-stat{display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid var(--border)}
 .camp-stat:last-child{border-bottom:none}
 .camp-stat-label{font-size:0.78rem;color:var(--text3)}
-.camp-stat-val{font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:#FAFAFA}
+.camp-stat-val{font-family:'IBM Plex Mono',monospace;font-size:0.82rem;color:var(--text)}
 .camp-stat-delta{font-size:0.68rem;font-weight:500;padding:1px 5px;border-radius:3px}
 .camp-stat-delta.good{color:var(--green);background:rgba(52,211,153,0.1)}
 .lift-hook{display:flex;align-items:center;gap:0;background:linear-gradient(90deg,rgba(0,212,170,0.06) 0%,var(--bg2) 40%);border:1px solid var(--border);border-left:3px solid var(--teal);border-radius:0 var(--radius2) var(--radius2) 0;padding:0.75rem 1.25rem;margin-bottom:1.25rem;flex-wrap:wrap;gap:0}
@@ -138,7 +138,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .ops-label{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text4);margin-right:0.25rem;white-space:nowrap}
 .ops-item{display:flex;align-items:center;gap:0.3rem}
 .ops-key{font-family:'IBM Plex Mono',monospace;font-size:0.62rem;color:var(--text4)}
-.ops-val{font-family:'IBM Plex Mono',monospace;font-size:0.75rem;font-weight:600;color:#FAFAFA}
+.ops-val{font-family:'IBM Plex Mono',monospace;font-size:0.75rem;font-weight:600;color:var(--text)}
 .ops-unit{font-size:0.62rem;color:var(--text4)}
 .ops-sep{color:var(--border2);font-size:0.75rem;margin:0 0.15rem}
 .ops-badge{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;padding:2px 7px;border-radius:3px;border:1px solid var(--border2);color:var(--purple)}
@@ -737,7 +737,7 @@ function renderStageChart(rows) {
       responsive:true, maintainAspectRatio:false, cutout:'65%',
       plugins: {
         legend: { position:'bottom', labels:{ color:'#71717A', font:{family:"'IBM Plex Mono'",size:10}, boxWidth:10, padding:8 } },
-        tooltip: { backgroundColor:'#18181B', borderColor:'#27272A', borderWidth:1, titleColor:'#FAFAFA', bodyColor:'#A1A1AA' }
+        tooltip: { backgroundColor:chartColors().bg2, borderColor:chartColors().border, borderWidth:1, titleColor:chartColors().text, bodyColor:chartColors().text4 }
       }
     }
   });
@@ -847,10 +847,10 @@ function renderCampaigns(campaigns, avgCpl) {
     <tfoot>
       <tr style="border-top:2px solid var(--border2)">
         <td style="color:var(--text3);font-family:'IBM Plex Sans',sans-serif">Total / Average</td>
-        <td style="color:#FAFAFA">₹${campaigns.reduce((s,c)=>s+c.spend,0).toLocaleString('en-IN')}</td>
-        <td style="color:#FAFAFA">${campaigns.reduce((s,c)=>s+c.clicks,0).toLocaleString('en-IN')}</td>
+        <td style="color:var(--text)">₹${campaigns.reduce((s,c)=>s+c.spend,0).toLocaleString('en-IN')}</td>
+        <td style="color:var(--text)">${campaigns.reduce((s,c)=>s+c.clicks,0).toLocaleString('en-IN')}</td>
         <td>—</td>
-        <td style="color:#FAFAFA">${Math.round(campaigns.reduce((s,c)=>s+c.conversions,0)*10)/10}</td>
+        <td style="color:var(--text)">${Math.round(campaigns.reduce((s,c)=>s+c.conversions,0)*10)/10}</td>
         <td>${cplPill(avgCpl)}</td>
       </tr>
     </tfoot>
@@ -966,13 +966,13 @@ function renderECTrend(rows) {
       responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: { backgroundColor:'#18181B', borderColor:'#27272A', borderWidth:1,
-          titleColor:'#FAFAFA', bodyColor:'#A1A1AA',
+        tooltip: { backgroundColor:chartColors().bg2, borderColor:chartColors().border, borderWidth:1,
+          titleColor:chartColors().text, bodyColor:chartColors().text4,
           callbacks: { label: ctx => ctx.raw + '% EC recovery · ' + (byDate[dates[ctx.dataIndex]]?.ec||0) + ' of ' + (byDate[dates[ctx.dataIndex]]?.total||0) } }
       },
       scales: {
-        x: { grid:{color:'var(--chart-grid)'}, ticks:{color:'#52525B',font:{family:"'IBM Plex Mono'",size:9}} },
-        y: { min:0, max:100, grid:{color:'var(--chart-grid)'},
+        x: { grid:{color:chartColors().grid}, ticks:{color:chartColors().text4,font:{family:"'IBM Plex Mono'",size:9}} },
+        y: { min:0, max:100, grid:{color:chartColors().grid},
           ticks:{color:'#52525B',font:{family:"'IBM Plex Mono'",size:9},callback:v=>v+'%'} }
       }
     }
@@ -1037,16 +1037,32 @@ function renderRestatementChart() {
           responsive: true, maintainAspectRatio: false,
           plugins: {
             legend: { position:'bottom', labels:{color:'#52525B',font:{family:"'IBM Plex Mono'",size:9},boxWidth:10,padding:6} },
-            tooltip: { backgroundColor:'#18181B', borderColor:'#27272A', borderWidth:1, titleColor:'#FAFAFA', bodyColor:'#A1A1AA' }
+            tooltip: { backgroundColor:chartColors().bg2, borderColor:chartColors().border, borderWidth:1, titleColor:chartColors().text, bodyColor:chartColors().text4 }
           },
           scales: {
-            x: { stacked:true, grid:{display:false}, ticks:{color:'#52525B',font:{family:"'IBM Plex Mono'",size:9}} },
-            y: { stacked:true, grid:{color:'var(--chart-grid)'}, ticks:{color:'#52525B',font:{family:"'IBM Plex Mono'",size:9}} }
+            x: { stacked:true, grid:{display:false}, ticks:{color:chartColors().text4,font:{family:"'IBM Plex Mono'",size:9}} },
+            y: { stacked:true, grid:{color:chartColors().grid}, ticks:{color:chartColors().text4,font:{family:"'IBM Plex Mono'",size:9}} }
           }
         }
       });
     })
     .catch(err => console.warn('BatchLog fetch failed:', err));
+}
+
+// ── CSS var resolver for Chart.js (can't read CSS vars natively) ─
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+function chartColors() {
+  return {
+    grid:    cssVar('--chart-grid') || 'rgba(255,255,255,0.025)',
+    text4:   cssVar('--text4')      || '#52525B',
+    text:    cssVar('--text')       || '#D4D4D8',
+    bg2:     cssVar('--bg2')        || '#111113',
+    border:  cssVar('--border')     || '#1E1E22',
+    teal:    cssVar('--teal')       || '#00D4AA',
+    purple:  cssVar('--purple')     || '#A78BFA',
+  };
 }
 
 function initCplChart(weeklyCpl) {
@@ -1112,14 +1128,14 @@ function initCplChart(weeklyCpl) {
     options: {
       responsive:true, maintainAspectRatio:false,
       plugins: {
-        legend:{ labels:{ color:'#52525B', font:{family:"'IBM Plex Mono'",size:10}, boxWidth:12 } },
-        tooltip:{ backgroundColor:'#18181B', borderColor:'#27272A', borderWidth:1,
-          titleColor:'#FAFAFA', bodyColor:'#A1A1AA',
+        legend:{ labels:{ color:chartColors().text4, font:{family:"'IBM Plex Mono'",size:10}, boxWidth:12 } },
+        tooltip:{ backgroundColor:chartColors().bg2, borderColor:chartColors().border, borderWidth:1,
+          titleColor:chartColors().text, bodyColor:chartColors().text4,
           callbacks:{label: ctx => ctx.raw ? '₹'+ctx.raw : 'N/A'} }
       },
       scales: {
-        x:{ grid:{color:'var(--chart-grid)'}, ticks:{color:'#52525B',font:{family:"'IBM Plex Mono'",size:10}} },
-        y:{ grid:{color:'var(--chart-grid)'},
+        x:{ grid:{color:chartColors().grid}, ticks:{color:chartColors().text4,font:{family:"'IBM Plex Mono'",size:10}} },
+        y:{ grid:{color:chartColors().grid},
           ticks:{color:'#52525B',font:{family:"'IBM Plex Mono'",size:10},callback:v=>'₹'+v} }
       }
     }
