@@ -18,8 +18,8 @@
   --text2:     #374151;
   --text3:     #6B7280;
   --text4:     #9CA3AF;
-  --blue:      #2563EB;
-  --blue-lt:   #EFF6FF;
+  --blue:      #0D9E6E;
+  --blue-lt:   #ECFDF5;
   --teal:      #0D9488;
   --teal-lt:   #F0FDFA;
   --teal-dim:  rgba(13,148,136,0.12);
@@ -52,8 +52,8 @@
   --text2:     #CBD5E1;
   --text3:     #94A3B8;
   --text4:     #64748B;
-  --blue:      #3B82F6;
-  --blue-lt:   rgba(59,130,246,0.12);
+  --blue:      #10B981;
+  --blue-lt:   rgba(16,185,129,0.12);
   --teal:      #14B8A6;
   --teal-lt:   rgba(20,184,166,0.1);
   --teal-dim:  rgba(20,184,166,0.12);
@@ -80,20 +80,25 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
 .main-wrap,.main{flex:1;min-width:0;display:flex;flex-direction:column;margin-left:var(--sidebar-w)}
 
 /* ── Sidebar ── */
-.sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:transform 0.25s ease;overflow-y:auto}
+.sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:transform 0.25s ease;overflow:hidden}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:99;backdrop-filter:blur(2px)}
 
 .sidebar-logo{padding:1.5rem 1.25rem 1rem;border-bottom:1px solid var(--border)}
 .wordmark{font-size:1.05rem;font-weight:700;color:var(--blue);letter-spacing:-0.02em}
 .client{font-size:0.7rem;color:var(--text4);margin-top:2px;font-weight:400}
 
-.nav{padding:1rem 0;flex:1}
+.nav{padding:1rem 0;flex:1;overflow-y:auto;overflow-x:hidden}
 .nav-section{font-size:0.65rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text4);padding:0.7rem 1.25rem 0.3rem}
 .nav-item{display:flex;align-items:center;gap:0.6rem;padding:0.6rem 1rem;margin:1px 0.75rem;border-radius:var(--radius3);font-size:0.84rem;font-weight:500;color:var(--text3);cursor:pointer;transition:all 0.15s}
 .nav-item:hover{background:var(--surface2);color:var(--text2)}
 .nav-item.active{background:var(--blue-lt);color:var(--blue);font-weight:600}
 .nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:0.8}
 .nav-item.active svg{opacity:1}
+
+/* ── Sidebar footer ── */
+.sidebar-footer{padding:1rem 1.25rem;border-top:1px solid var(--border);margin-top:auto;flex-shrink:0}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--text3);font-weight:500}
+.live-badge .live-dot{flex-shrink:0}
 
 /* ── Topbar ── */
 .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 1.75rem;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:var(--shadow)}
@@ -307,7 +312,17 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
 <div class="shell">
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
-      <div class="wordmark">scaletrix.ai</div>
+      <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.3rem">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="28" height="28" rx="7" fill="url(#brand-grad)"/>
+          <defs><linearGradient id="brand-grad" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse"><stop stop-color="#1BA87E"/><stop offset="1" stop-color="#0D9E6E"/></linearGradient></defs>
+          <rect x="8" y="8" width="11" height="11" rx="1.5" fill="none" stroke="white" stroke-width="1.8"/>
+          <rect x="11" y="14" width="7" height="7" rx="1.5" fill="none" stroke="white" stroke-width="1.8"/>
+          <line x1="16" y1="12" x2="20" y2="8" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+          <polyline points="17.5,8 20,8 20,10.5" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <div class="wordmark">scaletrix.ai</div>
+      </div>
       <div class="client">AnalytixLabs · ScaleX</div>
     </div>
     <nav class="nav">
