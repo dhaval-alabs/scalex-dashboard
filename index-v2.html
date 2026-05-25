@@ -777,19 +777,28 @@ function parseCSV(text) {
   if (lines.length < 2) return [];
   return lines.slice(1).map(line => {
     const c = splitCSVLine(line);
-    // Log sheet columns (relay appendRow order):
-    // 0:Timestamp 1:Status 2:OldStage 3:NewStage 4:GCLID 5:Value
+    // Log sheet actual columns (verified from live sheet May 25):
+    // 0:Timestamp 1:Status 2:OldStage 3:NewStage 4:GCLID 5:Value(₹)
     // 6:ProspectID 7:Name 8:Email 9:Phone 10:Source 11:Medium
-    // 12:Campaign 13:PageUrl 14:LeadScore 15:EngScore 16:FbClid
-    // 17:hEmail 18:hPhone 19:convType 20:message
+    // 12:Campaign 13:PageURL 14:LeadScore 15:EngScore 16:FBClid
+    // 17:Message (e.g. "✅ ₹2000 sent to Google Ads | gclid: ...")
+    // 18-20: empty
+    // Bucket classification is via value (₹200/500/2000/10000/1)
+    const val = parseFloat(c[5]) || 0;
+    const convId = val === 200 ? 'lead_submitted'
+                 : val === 500 ? 'signup'
+                 : val >= 1000 && val < 10000 ? 'qualified'
+                 : val === 10000 ? 'converted'
+                 : val === 1 ? 'disqualified'
+                 : '';
     return {
       timestamp: c[0]||'', status: c[1]||'', oldStage: c[2]||'',
-      newStage: c[3]||'', gclid: c[4]||'', value: parseFloat(c[5])||0,
+      newStage: c[3]||'', gclid: c[4]||'', value: val,
       prospectId: c[6]||'', name: c[7]||'', email: c[8]||'',
       phone: c[9]||'', source: c[10]||'', medium: c[11]||'',
       campaign: c[12]||'', pageUrl: c[13]||'',
-      convId: c[19]||'',   // convType column — used for bucket classification
-      message: c[20]||''
+      convId: convId,
+      message: c[17]||''
     };
   }).filter(r => r.timestamp && r.status);
 }
