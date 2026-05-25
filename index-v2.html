@@ -1,0 +1,1993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AnalytixLabs — ScaleX Dashboard v2</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+/* ── Design system ── */
+:root{
+  --bg:        #EEF2F7;
+  --surface:   #FFFFFF;
+  --surface2:  #F8FAFC;
+  --border:    rgba(0,0,0,0.06);
+  --border2:   rgba(0,0,0,0.10);
+  --text:      #0F1923;
+  --text2:     #374151;
+  --text3:     #6B7280;
+  --text4:     #9CA3AF;
+  --blue:      #2563EB;
+  --blue-lt:   #EFF6FF;
+  --teal:      #0D9488;
+  --teal-lt:   #F0FDFA;
+  --teal-dim:  rgba(13,148,136,0.12);
+  --purple:    #7C3AED;
+  --purple-lt: #F5F3FF;
+  --amber:     #D97706;
+  --amber-lt:  #FFFBEB;
+  --green:     #059669;
+  --green-lt:  #ECFDF5;
+  --coral:     #DC2626;
+  --coral-lt:  #FEF2F2;
+  --red:       #DC2626;
+  --chart-grid:rgba(0,0,0,0.05);
+  --shadow:    0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --radius:    12px;
+  --radius2:   8px;
+  --radius3:   6px;
+  --sidebar-w: 220px;
+  --font:      'DM Sans', sans-serif;
+  --mono:      'DM Mono', monospace;
+}
+[data-theme="dark"]{
+  --bg:        #0A0A0C;
+  --surface:   #111113;
+  --surface2:  #18181B;
+  --border:    rgba(255,255,255,0.07);
+  --border2:   rgba(255,255,255,0.12);
+  --text:      #F1F5F9;
+  --text2:     #CBD5E1;
+  --text3:     #94A3B8;
+  --text4:     #64748B;
+  --blue:      #3B82F6;
+  --blue-lt:   rgba(59,130,246,0.12);
+  --teal:      #14B8A6;
+  --teal-lt:   rgba(20,184,166,0.1);
+  --teal-dim:  rgba(20,184,166,0.12);
+  --purple:    #A78BFA;
+  --purple-lt: rgba(167,139,250,0.1);
+  --amber:     #F59E0B;
+  --amber-lt:  rgba(245,158,11,0.1);
+  --green:     #10B981;
+  --green-lt:  rgba(16,185,129,0.1);
+  --coral:     #F87171;
+  --coral-lt:  rgba(248,113,113,0.1);
+  --red:       #EF4444;
+  --chart-grid:rgba(255,255,255,0.04);
+  --shadow:    none;
+  --shadow-md: none;
+}
+
+/* ── Reset ── */
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;min-height:100vh}
+
+/* ── Layout shell ── */
+.shell{display:flex;min-height:100vh}
+.main-wrap{flex:1;min-width:0;display:flex;flex-direction:column}
+
+/* ── Sidebar ── */
+.sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:transform 0.25s ease;overflow-y:auto}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:99;backdrop-filter:blur(2px)}
+
+.sidebar-logo{padding:1.5rem 1.25rem 1rem;border-bottom:1px solid var(--border)}
+.wordmark{font-size:1rem;font-weight:700;color:var(--blue);letter-spacing:-0.02em}
+.client{font-size:0.7rem;color:var(--text4);margin-top:2px;font-weight:400}
+
+.nav{padding:1rem 0;flex:1}
+.nav-section{font-size:0.62rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text4);padding:0.6rem 1.25rem 0.3rem}
+.nav-item{display:flex;align-items:center;gap:0.6rem;padding:0.55rem 1rem;margin:1px 0.75rem;border-radius:var(--radius3);font-size:0.82rem;font-weight:500;color:var(--text3);cursor:pointer;transition:all 0.15s}
+.nav-item:hover{background:var(--surface2);color:var(--text2)}
+.nav-item.active{background:var(--blue-lt);color:var(--blue);font-weight:600}
+.nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:0.8}
+.nav-item.active svg{opacity:1}
+
+/* ── Topbar ── */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 1.75rem;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;margin-left:var(--sidebar-w);box-shadow:var(--shadow)}
+.topbar-left h1{font-size:1rem;font-weight:700;color:var(--text);letter-spacing:-0.02em}
+.topbar-sub{font-size:0.7rem;color:var(--text4);margin-top:1px}
+.topbar-right{display:flex;align-items:center;gap:0.6rem}
+
+/* ── Main content ── */
+.content{margin-left:var(--sidebar-w);padding:1.75rem;flex:1}
+
+/* ── Date dropdown ── */
+.date-dropdown-wrap{position:relative;display:flex;align-items:center}
+.date-dropdown{font-family:var(--mono);font-size:0.72rem;padding:6px 28px 6px 12px;border-radius:var(--radius2);border:1px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer;outline:none;appearance:none;-webkit-appearance:none;min-width:200px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239CA3AF' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;box-shadow:var(--shadow);transition:border-color 0.15s}
+.date-dropdown:focus,.date-dropdown:hover{border-color:var(--blue);color:var(--text)}
+.date-dropdown option{background:var(--surface);color:var(--text)}
+.date-picker-wrap{display:none;align-items:center;gap:0.5rem}
+.date-picker-wrap.open{display:flex}
+.date-picker-wrap input[type=date]{font-family:var(--mono);font-size:0.72rem;padding:5px 8px;border-radius:var(--radius3);border:1px solid var(--border2);background:var(--surface);color:var(--text2);outline:none}
+.date-sep{color:var(--text4)}
+.date-apply-btn{font-size:0.72rem;padding:5px 12px;border-radius:var(--radius3);border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:var(--font)}
+
+/* ── Theme toggle ── */
+.theme-toggle{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:var(--radius3);border:1px solid var(--border2);background:var(--surface);color:var(--text3);cursor:pointer;transition:all 0.15s;flex-shrink:0;box-shadow:var(--shadow)}
+.theme-toggle:hover{border-color:var(--blue);color:var(--blue)}
+.refresh-btn{display:flex;align-items:center;gap:0.35rem;font-size:0.75rem;color:var(--text3);border:1px solid var(--border2);background:var(--surface);padding:5px 12px;border-radius:var(--radius3);cursor:pointer;transition:all 0.15s;box-shadow:var(--shadow)}
+.refresh-btn:hover{color:var(--blue);border-color:var(--blue)}
+
+/* ── Lift hook ── */
+.lift-hook{display:flex;align-items:center;background:var(--surface);border-radius:var(--radius);padding:1rem 1.5rem;margin-bottom:1.5rem;box-shadow:var(--shadow-md);gap:0;border:1px solid var(--border);border-left:3px solid var(--teal);flex-wrap:wrap}
+.lift-stat{display:flex;flex-direction:column;align-items:flex-start;padding:0 1.5rem;gap:0.15rem}
+.lift-stat:first-child{padding-left:0}
+.lift-val{font-family:var(--mono);font-size:1.35rem;font-weight:600;color:var(--teal);line-height:1}
+.lift-label{font-size:0.67rem;color:var(--text4);white-space:nowrap}
+.lift-divider{width:1px;height:2.5rem;background:var(--border2);flex-shrink:0}
+#lh-cpl-val{color:var(--teal)}
+#lh-leads-val{color:var(--teal)}
+#lh-ec-val{color:var(--purple)}
+#lh-restate-val{color:var(--blue)}
+
+/* ── KPI grid ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:1.5rem}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.1rem 1.25rem;position:relative;overflow:hidden;box-shadow:var(--shadow);transition:box-shadow 0.2s}
+.kpi:hover{box-shadow:var(--shadow-md)}
+.kpi-label{font-size:0.62rem;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--text4);margin-bottom:0.5rem}
+.kpi-value{font-family:var(--mono);font-size:1.45rem;font-weight:600;color:var(--text);letter-spacing:-0.02em;line-height:1}
+.kpi-sub{font-size:0.68rem;color:var(--text4);margin-top:0.3rem}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:3px 3px 0 0}
+.kpi::after{content:'';position:absolute;top:0;right:0;width:70px;height:70px;border-radius:50%;opacity:0.08;pointer-events:none}
+.kpi.teal{border-top:none}.kpi.teal::before{background:var(--teal)}.kpi.teal::after{background:radial-gradient(circle,var(--teal),transparent 70%);transform:translate(20px,-25px)}
+.kpi.blue{border-top:none}.kpi.blue::before{background:var(--blue)}.kpi.blue::after{background:radial-gradient(circle,var(--blue),transparent 70%);transform:translate(20px,-25px)}
+.kpi.purple{border-top:none}.kpi.purple::before{background:var(--purple)}.kpi.purple::after{background:radial-gradient(circle,var(--purple),transparent 70%);transform:translate(20px,-25px)}
+.kpi.amber{border-top:none}.kpi.amber::before{background:var(--amber)}.kpi.amber::after{background:radial-gradient(circle,var(--amber),transparent 70%);transform:translate(20px,-25px)}
+.kpi.green{border-top:none}.kpi.green::before{background:var(--green)}.kpi.green::after{background:radial-gradient(circle,var(--green),transparent 70%);transform:translate(20px,-25px)}
+.coral-kpi{border-top:none}.coral-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--coral);border-radius:3px 3px 0 0}.coral-kpi::after{background:radial-gradient(circle,var(--coral),transparent 70%);transform:translate(20px,-25px);position:absolute;top:0;right:0;width:70px;height:70px;border-radius:50%;opacity:0.08;pointer-events:none}
+
+/* ── Chart cards ── */
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.4rem;box-shadow:var(--shadow);position:relative;overflow:hidden;transition:box-shadow 0.2s}
+.chart-card:hover{box-shadow:var(--shadow-md)}
+.chart-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.1rem}
+.chart-title{font-size:0.88rem;font-weight:700;color:var(--text);letter-spacing:-0.01em}
+.chart-sub{font-size:0.7rem;color:var(--text4);margin-top:2px}
+.live-tag{display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:0.62rem;color:var(--green);white-space:nowrap}
+.live-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.empty-state{font-size:0.78rem;color:var(--text4);text-align:center;padding:2rem 0}
+
+/* ── CPL chart row ── */
+.cpl-row{display:grid;grid-template-columns:1.4fr 1fr;gap:12px;margin-bottom:1.5rem}
+
+/* ── Signal Flow ── */
+.sf-panel-wrap{margin-bottom:1.5rem}
+.sf-panel-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.1rem}
+.sf-row1{display:grid;grid-template-columns:1.5fr 24px 1.1fr 24px 1.3fr 1.1fr;gap:0.75rem;align-items:start;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+.sf-zone{min-width:0}
+.sf-zone-label{font-family:var(--mono);font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text4);margin-bottom:0.4rem}
+.sf-zone-src{color:var(--text4);font-size:0.55rem;margin-left:4px}
+.sf-zone-big{font-family:var(--mono);font-size:1.5rem;font-weight:700;color:var(--text);line-height:1}
+.sf-zone-sub{font-size:0.65rem;color:var(--text4);margin-top:0.15rem}
+.sf-arrow{display:flex;align-items:center;justify-content:center;color:var(--border2);padding-top:1.2rem}
+.sf-inbound .sf-zone-big{color:var(--blue)}
+.sf-outbound .sf-zone-big{color:var(--teal)}
+.sf-filter-rows{display:flex;flex-direction:column;gap:0.3rem;margin-top:0.4rem}
+.sf-filter-row{display:flex;justify-content:space-between;align-items:center;gap:0.5rem}
+.sf-filter-key{font-size:0.72rem;color:var(--text3)}
+.sf-filter-val{font-family:var(--mono);font-size:0.72rem;font-weight:600;color:var(--teal)}
+.sf-filter-sub{font-size:0.62rem;color:var(--text4);margin-top:0.4rem;line-height:1.7;padding-left:0.25rem;border-left:2px solid var(--border2)}
+.sf-donut-caption{font-size:0.62rem;color:var(--text4);text-align:center;margin-top:0.4rem;font-style:italic;line-height:1.4}
+.sf-feed-zone .feed-item{padding:0.4rem 0}
+.sf-feed-zone .feed-event{font-size:0.7rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px}
+.sf-feed-zone .feed-meta{font-size:0.58rem}
+.sf-row2{padding-top:0.75rem}
+.sf-row2-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem}
+
+/* ── Feed ── */
+.feed-item{padding:0.55rem 0;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:2px}
+.feed-item:last-child{border-bottom:none}
+.feed-event{font-size:0.78rem;color:var(--text2);font-weight:500}
+.feed-meta{display:flex;align-items:center;gap:0.5rem;font-size:0.65rem;color:var(--text4)}
+.feed-stage{font-weight:600;color:var(--blue)}
+.feed-value{font-family:var(--mono);font-size:0.65rem;padding:1px 6px;border-radius:4px;background:var(--teal-lt);color:var(--teal);font-weight:500}
+
+/* ── Funnel stages ── */
+.funnel-stage{display:flex;align-items:center;gap:8px;padding:0.3rem 0}
+.stage-name{font-size:0.72rem;color:var(--text3);min-width:110px}
+.stage-bar-wrap{flex:1;background:var(--surface2);border-radius:3px;height:5px}
+.stage-bar{height:5px;border-radius:3px;transition:width 0.4s ease}
+.stage-count{font-family:var(--mono);font-size:0.68rem;color:var(--text4);min-width:32px;text-align:right}
+
+/* ── Campaigns table ── */
+.camp-table{width:100%;border-collapse:collapse;font-size:0.78rem}
+.camp-table th{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--text4);padding:0.5rem 0.75rem;text-align:left;border-bottom:2px solid var(--border);white-space:nowrap;font-weight:500}
+.camp-table th:not(:first-child){text-align:right}
+.camp-table td{padding:0.65rem 0.75rem;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle}
+.camp-table td:not(:first-child){text-align:right}
+.camp-table td:first-child{font-size:0.75rem;font-weight:500;color:var(--text);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.camp-table tfoot tr td{font-weight:600;background:var(--surface2);font-size:0.75rem}
+.camp-table tbody tr{transition:background 0.1s}
+.camp-table tbody tr:hover td{background:var(--surface2)}
+.camp-table tbody tr:hover td:first-child{color:var(--blue)}
+.camp-table tbody tr.camp-row{cursor:pointer}
+.camp-table tbody tr.camp-row td:first-child::before{content:'▶ ';font-size:0.55rem;color:var(--text4);margin-right:2px}
+.camp-table tbody tr.camp-row.expanded td:first-child::before{content:'▼ '}
+.camp-expand-row{background:var(--surface2) !important}
+.camp-expand-row td{padding:0.75rem 1rem !important;border-bottom:1px solid var(--border2) !important}
+.bucket-funnel{display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center}
+.bucket-item{display:flex;flex-direction:column;align-items:center;gap:0.2rem;min-width:80px}
+.bucket-label{font-size:0.6rem;color:var(--text4);font-family:var(--mono);text-align:center;white-space:nowrap}
+.bucket-count{font-family:var(--mono);font-size:1rem;font-weight:700;color:var(--text);line-height:1}
+.bucket-value{font-size:0.58rem;color:var(--text4)}
+.bucket-arrow{color:var(--border2);font-size:0.75rem;align-self:center;margin-top:-0.5rem}
+.enroll-rate{font-family:var(--mono);font-size:0.72rem;color:var(--teal);margin-left:auto;padding-left:1rem;border-left:1px solid var(--border2)}
+.cpl-pill{font-family:var(--mono);font-size:0.75rem;padding:2px 7px;border-radius:4px;font-weight:500}
+.cpl-good{background:var(--green-lt);color:var(--green)}
+.cpl-mid{background:var(--amber-lt);color:var(--amber)}
+.cpl-bad{background:var(--coral-lt);color:var(--coral)}
+
+/* ── Reconciliation ── */
+.recon-card{margin-bottom:1.5rem}
+.recon-table{width:100%;border-collapse:collapse;font-size:0.75rem}
+.recon-table th{font-family:var(--mono);font-size:0.6rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--text4);padding:0.4rem 0.75rem;text-align:left;border-bottom:1px solid var(--border);font-weight:500;white-space:nowrap}
+.recon-table th:nth-child(3),.recon-table th:nth-child(4),.recon-table th:nth-child(5){text-align:right}
+.recon-table td{padding:0.45rem 0.75rem;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle;font-size:0.72rem}
+.recon-table td:nth-child(3),.recon-table td:nth-child(4),.recon-table td:nth-child(5){text-align:right;font-family:var(--mono)}
+.recon-table tr:last-child td{border-bottom:none}
+.recon-table tr:hover td{background:var(--surface2)}
+.recon-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;flex-shrink:0}
+.recon-alert{font-family:var(--mono);font-size:0.6rem;padding:1px 5px;border-radius:3px}
+.recon-alert.ok{color:var(--green);background:var(--green-lt)}
+.recon-alert.warn{color:var(--amber);background:var(--amber-lt)}
+.recon-alert.crit{color:var(--red);background:var(--coral-lt)}
+
+/* ── Bangalore Spotlight ── */
+.blr-spotlight{border-left:3px solid var(--amber) !important;border-top:none !important}
+
+/* ── Smart Bidding ── */
+.smb-row{display:flex;align-items:center;gap:0.75rem;padding:0.4rem 0;border-bottom:1px solid var(--border)}
+.smb-row:last-child{border-bottom:none}
+.smb-action{font-family:var(--mono);font-size:0.68rem;color:var(--text3);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.smb-bar-wrap{flex:1.5;background:var(--surface2);border-radius:3px;height:6px;overflow:hidden}
+.smb-bar{height:100%;border-radius:3px;transition:width 0.4s}
+.smb-count{font-family:var(--mono);font-size:0.72rem;font-weight:600;min-width:36px;text-align:right}
+.smb-badge{font-family:var(--mono);font-size:0.6rem;padding:1px 6px;border-radius:3px;white-space:nowrap}
+.smb-badge.eligible{color:var(--green);background:var(--green-lt)}
+.smb-badge.limited{color:var(--amber);background:var(--amber-lt)}
+
+/* ── Ops strip ── */
+.ops-strip{display:flex;align-items:center;gap:0.5rem;padding:0.65rem 1.1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius2);margin-bottom:1.5rem;box-shadow:var(--shadow);flex-wrap:wrap}
+.ops-label{font-family:var(--mono);font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text4);margin-right:0.25rem;white-space:nowrap}
+.ops-item{display:flex;align-items:center;gap:0.3rem}
+.ops-key{font-family:var(--mono);font-size:0.62rem;color:var(--text4)}
+.ops-val{font-family:var(--mono);font-size:0.75rem;font-weight:600;color:var(--text)}
+.ops-unit{font-size:0.62rem;color:var(--text4)}
+.ops-sep{color:var(--border2);font-size:0.75rem;margin:0 0.15rem}
+.ops-badge{font-family:var(--mono);font-size:0.65rem;padding:2px 7px;border-radius:3px;border:1px solid var(--border2);color:var(--purple);background:var(--purple-lt)}
+
+/* ── Footer ── */
+.dash-footer{margin-left:var(--sidebar-w);padding:0.9rem 1.75rem;font-size:0.65rem;color:var(--text4);border-top:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem}
+
+/* ── Delta/prev cell ── */
+.delta-pos{color:var(--green);font-size:0.65rem}
+.delta-neg{color:var(--red);font-size:0.65rem}
+.prev-cell{display:block;font-size:0.62rem;color:var(--text4);margin-top:1px}
+
+/* ── Mobile hamburger ── */
+.hamburger{display:none;background:none;border:none;cursor:pointer;padding:4px;color:var(--text2)}
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-overlay.open{display:block}
+  .topbar{margin-left:0;padding:0 1rem}
+  .content{margin-left:0;padding:1rem}
+  .kpi-grid{grid-template-columns:repeat(3,1fr)}
+  .cpl-row{grid-template-columns:1fr}
+  .sf-row1{grid-template-columns:1fr;gap:1rem}
+  .sf-arrow{transform:rotate(90deg);justify-content:flex-start;padding:0}
+  .sf-feed-zone{border-left:none;padding-left:0;border-top:1px solid var(--border);padding-top:0.75rem}
+  .hamburger{display:flex}
+  .dash-footer{margin-left:0}
+}
+@media(max-width:560px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* ── Section divider label ── */
+.section-label{display:flex;align-items:center;gap:0.75rem;margin:1.75rem 0 1rem}
+.section-label span{font-size:0.62rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text4);white-space:nowrap}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+</style>
+</head>
+<body>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="wordmark">scaletrix.ai</div>
+      <div class="client">AnalytixLabs · ScaleX</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">Overview</div>
+      <div class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Live Feed
+      </div>
+      <div class="nav-section">Intelligence</div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>
+        Funnel Analysis
+      </div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+        Campaign Data
+      </div>
+      <div class="nav-section">System</div>
+      <div class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        Pixel Health
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="live-badge">
+        <div class="live-dot"></div>
+        <span id="live-status">Connecting…</span>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:0.75rem">
+        <button class="hamburger" onclick="openSidebar()" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="topbar-left">
+          <h1>Performance Overview</h1>
+          <p id="last-updated">Loading data…</p>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="date-dropdown-wrap">
+          <select class="date-dropdown" id="date-dropdown" onchange="handleDateDropdown(this)">
+            <option value="today">Today</option>
+            <option value="yesterday">Yesterday</option>
+            <option value="7">Last 7 days</option>
+            <option value="14">Last 14 days</option>
+            <option value="30" selected>Last 30 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="this_month">This month</option>
+            <option value="last_month">Last month</option>
+            <option value="this_quarter">This quarter</option>
+            <option value="scalex">Since ScaleX activation (W6)</option>
+            <option value="custom">Custom…</option>
+          </select>
+        </div>
+        <div class="date-picker-wrap" id="date-picker-wrap">
+          <input type="date" id="date-from" />
+          <span class="date-sep">→</span>
+          <input type="date" id="date-to" />
+          <button class="date-apply-btn" onclick="applyCustomDate()">Go</button>
+        </div>
+        <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode" aria-label="Toggle theme">
+          <svg id="theme-icon-dark" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <svg id="theme-icon-light" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <button class="refresh-btn" id="refresh-btn" onclick="loadData()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+          <span>Refresh</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="lift-hook" id="lift-hook">
+        <div class="lift-stat" id="lh-cpl">
+          <div class="lift-val" id="lh-cpl-val">₹599 → ₹468</div>
+          <div class="lift-label">CPL · before → after ScaleX</div>
+        </div>
+        <div class="lift-divider"></div>
+        <div class="lift-stat" id="lh-leads">
+          <div class="lift-val" id="lh-leads-val">+345 leads</div>
+          <div class="lift-label">incremental · same budget</div>
+        </div>
+        <div class="lift-divider"></div>
+        <div class="lift-stat" id="lh-ec">
+          <div class="lift-val" id="lh-ec-val">—</div>
+          <div class="lift-label">recovered via EC</div>
+        </div>
+        <div class="lift-divider"></div>
+        <div class="lift-stat" id="lh-restate">
+          <div class="lift-val" id="lh-restate-val">—</div>
+          <div class="lift-label">corrections last 7d</div>
+        </div>
+        <div class="lift-divider"></div>
+        <div class="lift-stat" id="lh-blr" style="opacity:0.85">
+          <div class="lift-val" id="lh-blr-val" style="color:var(--amber);font-size:1rem">−58% CPL · +255% leads</div>
+          <div class="lift-label">★ Bangalore · best campaign</div>
+        </div>
+      </div>
+
+      <div class="chart-card" style="margin-bottom:1.25rem">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">EC Recovery — Daily</div>
+            <div class="chart-sub">% of conversions recovered via Enhanced Conversions (no GCLID, matched email/phone)</div>
+          </div>
+          <div class="live-tag"><div class="live-dot"></div>live</div>
+        </div>
+        <div style="position:relative;height:140px"><canvas id="ecTrendChart"></canvas></div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi teal">
+          <div class="kpi-label">Total Conversions</div>
+          <div class="kpi-value" id="kpi-leads">—</div>
+          <div class="kpi-sub" id="kpi-leads-sub">loading…</div>
+        </div>
+        <div class="kpi blue">
+          <div class="kpi-label">Cost Per Lead</div>
+          <div class="kpi-value" id="kpi-cpl">—</div>
+          <div class="kpi-sub" id="kpi-cpl-sub">loading…</div>
+        </div>
+        <div class="kpi purple">
+          <div class="kpi-label">Ad Spend</div>
+          <div class="kpi-value" id="kpi-spend">—</div>
+          <div class="kpi-sub" id="kpi-spend-sub">loading…</div>
+        </div>
+        <div class="kpi green">
+          <div class="kpi-label">CRM Conversions Sent</div>
+          <div class="kpi-value" id="kpi-success">—</div>
+          <div class="kpi-sub" id="kpi-success-sub">loading…</div>
+        </div>
+        <div class="kpi amber">
+          <div class="kpi-label">GCLID · Form Leads</div>
+          <div class="kpi-value" id="kpi-match-form">—</div>
+          <div class="kpi-sub" id="kpi-match-form-sub">loading…</div>
+        </div>
+        <div class="kpi coral-kpi" style="border-top:2px solid var(--coral)">
+          <div class="kpi-label">GCLID · Non-Form</div>
+          <div class="kpi-value" id="kpi-match-nonform">—</div>
+          <div class="kpi-sub" id="kpi-match-nonform-sub">loading…</div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">CPL Trend — Weekly</div>
+              <div class="chart-sub">Before/after ScaleX server-side activation (W6)</div>
+            </div>
+            <div class="chart-badge">₹/lead</div>
+          </div>
+          <div style="position:relative;height:220px"><canvas id="cplChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Conversions by Stage</div>
+              <div class="chart-sub">Live · SUCCESS rows from relay log</div>
+            </div>
+            <div class="live-tag"><div class="live-dot"></div>live</div>
+          </div>
+          <div style="position:relative;height:200px" id="stage-chart-wrap"><canvas id="stageChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Signal Flow panel — Inbound → Filter → Outbound | Feed -->
+      <div class="chart-card sf-panel-wrap">
+        <div class="sf-panel-header">
+          <div>
+            <div class="chart-title">Signal Flow</div>
+            <div class="chart-sub">CRM inbound → ScaleX filter → Google Ads outbound</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.75rem">
+            <span style="font-family:'DM Mono',monospace;font-size:0.62rem;padding:2px 7px;border-radius:3px;border:1px solid var(--border2);color:var(--text4)">v10 · live</span>
+            <div class="live-tag"><div class="live-dot"></div>live</div>
+          </div>
+        </div>
+
+        <!-- Row 1: Inbound | Filter | Outbound | Feed -->
+        <div class="sf-row1">
+
+          <!-- Zone A: Inbound CRM -->
+          <div class="sf-zone sf-inbound">
+            <div class="sf-zone-label">INBOUND <span class="sf-zone-src">CRM</span></div>
+            <div class="sf-zone-big" id="sf-inbound-count">—</div>
+            <div class="sf-zone-sub">stage changes</div>
+            <div id="sf-inbound-bars" style="margin-top:0.75rem"></div>
+          </div>
+
+          <!-- Arrow -->
+          <div class="sf-arrow">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </div>
+
+          <!-- Zone B: ScaleX Filter -->
+          <div class="sf-zone sf-filter">
+            <div class="sf-zone-label">SCALEX <span class="sf-zone-src">filter</span></div>
+            <div class="sf-filter-rows" id="sf-filter-rows">
+              <div class="sf-filter-row">
+                <span class="sf-filter-key">PPC-only filter</span>
+                <span class="sf-filter-val" id="sf-ppc-pass">—</span>
+              </div>
+              <div class="sf-filter-row">
+                <span class="sf-filter-key">14 → 5 mapping</span>
+                <span class="sf-filter-val" style="color:var(--teal)">active</span>
+              </div>
+              <div class="sf-filter-row" style="margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid var(--border)">
+                <span class="sf-filter-key" style="color:var(--text4)">Filtered out</span>
+                <span class="sf-filter-val" id="sf-filtered-total" style="color:var(--text4)">—</span>
+              </div>
+              <div class="sf-filter-sub" id="sf-filter-breakdown"></div>
+            </div>
+          </div>
+
+          <!-- Arrow -->
+          <div class="sf-arrow">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </div>
+
+          <!-- Zone C: Outbound Google -->
+          <div class="sf-zone sf-outbound">
+            <div class="sf-zone-label">OUTBOUND <span class="sf-zone-src">Google Ads</span></div>
+            <div class="sf-zone-big" id="sf-outbound-count">—</div>
+            <div class="sf-zone-sub">conversions sent</div>
+            <div style="position:relative;height:130px;margin-top:0.5rem"><canvas id="sfDonutChart"></canvas></div>
+            <div class="sf-donut-caption">ScaleX maps 14 CRM stages into 5 proxy-value buckets</div>
+          </div>
+
+          <!-- Zone D: Live Feed sidebar -->
+          <div class="sf-zone sf-feed-zone" style="border-left:1px solid var(--border);padding-left:0.85rem">
+            <div class="sf-zone-label">LIVE FEED <span class="sf-zone-src">sGTM</span><div class="live-dot" style="display:inline-block;margin-left:4px"></div></div>
+            <div id="feed-list" style="max-height:240px;overflow-y:auto;min-width:0"><div class="empty-state">Loading…</div></div>
+          </div>
+
+        </div>
+
+        <!-- Row 2: Restatement Cascade -->
+        <div class="sf-row2">
+          <div class="sf-row2-header">
+            <div>
+              <span class="sf-zone-label">RESTATEMENT CASCADE</span>
+              <span class="sf-zone-src" style="margin-left:6px">corrections applied to Google</span>
+            </div>
+            <span id="sf-restate-note" style="font-size:0.65rem;color:var(--amber);font-family:'DM Mono',monospace"></span>
+          </div>
+          <div style="position:relative;height:120px"><canvas id="restateChart"></canvas></div>
+        </div>
+
+      </div>
+      <!-- end Signal Flow panel -->
+
+      <!-- Lead Funnel (hidden element — data still computed, used by inbound zone) -->
+      <div id="funnel-stages" style="display:none"></div>
+
+    </div>
+
+      <!-- ── Reconciliation widget ── -->
+      <div class="chart-card recon-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Signal Reconciliation — Last 7 Days</div>
+            <div class="chart-sub">Every CRM event accounted for · status breakdown by day</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.75rem">
+            <span id="recon-total-badge" style="font-family:'DM Mono',monospace;font-size:0.68rem;padding:2px 8px;border-radius:3px;background:var(--teal-dim);color:var(--teal)">— events</span>
+            <div class="live-tag"><div class="live-dot"></div>live</div>
+          </div>
+        </div>
+        <div style="position:relative;height:130px;margin-bottom:0.75rem"><canvas id="reconChart"></canvas></div>
+        <div style="overflow-x:auto">
+          <table class="recon-table">
+            <thead><tr>
+              <th>Status</th><th>Meaning</th><th>7d total</th><th>% of all</th><th>Alert</th>
+            </tr></thead>
+            <tbody id="recon-tbody"><tr><td colspan="5" style="text-align:center;color:var(--text4);padding:1rem">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── Bangalore Spotlight card ── -->
+      <div class="chart-card blr-spotlight" id="blr-spotlight" style="display:none;margin-bottom:1.25rem;border-top:2px solid var(--amber);background:linear-gradient(135deg,rgba(251,191,36,0.04) 0%,var(--bg2) 50%)">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+
+          <!-- Left: headline stats -->
+          <div>
+            <div style="font-family:'DM Mono',monospace;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--amber);margin-bottom:0.5rem">★ Bangalore · Campaign Spotlight</div>
+            <div style="font-size:0.82rem;color:var(--text3);margin-bottom:0.75rem" id="blr-campaign-name">DS-Bangaluru-Leads-Search</div>
+            <div style="display:flex;gap:1.5rem;flex-wrap:wrap">
+              <div>
+                <div style="font-family:'DM Mono',monospace;font-size:1.8rem;font-weight:700;color:var(--green);line-height:1" id="blr-cpl-delta">−58%</div>
+                <div style="font-size:0.68rem;color:var(--text4);margin-top:0.2rem">CPL reduction</div>
+                <div style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--text3);margin-top:0.15rem" id="blr-cpl-abs">₹484 → ₹204</div>
+              </div>
+              <div>
+                <div style="font-family:'DM Mono',monospace;font-size:1.8rem;font-weight:700;color:var(--teal);line-height:1" id="blr-leads-delta">+255%</div>
+                <div style="font-size:0.68rem;color:var(--text4);margin-top:0.2rem">leads growth</div>
+                <div style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--text3);margin-top:0.15rem" id="blr-leads-abs">— leads this period</div>
+              </div>
+              <div>
+                <div style="font-family:'DM Mono',monospace;font-size:1.8rem;font-weight:700;color:var(--blue);line-height:1" id="blr-spend">—</div>
+                <div style="font-size:0.68rem;color:var(--text4);margin-top:0.2rem">ad spend</div>
+                <div style="font-size:0.68rem;color:var(--text3);margin-top:0.15rem" id="blr-spend-delta"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: CPL sparkline -->
+          <div style="flex-shrink:0;min-width:180px">
+            <div style="font-family:'DM Mono',monospace;font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text4);margin-bottom:0.4rem">CPL trend · this vs prior period</div>
+            <div style="position:relative;height:70px;width:100%"><canvas id="blrSparkline"></canvas></div>
+          </div>
+
+        </div>
+        <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border);font-size:0.7rem;color:var(--text4);font-style:italic">
+          ScaleX server-side tracking capturing phone + walk-in leads previously lost. Experiment campaign running alongside brand terms.
+        </div>
+      </div>
+
+      <!-- Campaign breakdown — live from Google Ads -->
+      <div class="chart-card" style="margin-bottom:1.25rem">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">All Campaigns — Performance Breakdown</div>
+            <div class="chart-sub" id="camp-table-sub">Live · Google Ads API · sorted by spend</div>
+          </div>
+          <div class="live-tag"><div class="live-dot"></div>live</div>
+        </div>
+        <div id="camp-table-wrap">
+          <div class="empty-state">Loading campaigns…</div>
+        </div>
+      </div>
+
+      <!-- ── Ops heartbeat strip ── -->
+      <!-- ── Smart Bidding Maturity tile ── -->
+      <div class="chart-card smb-tile" style="margin-bottom:1.25rem">
+        <div class="chart-header" style="margin-bottom:0.75rem">
+          <div>
+            <div class="chart-title">Smart Bidding Maturity</div>
+            <div class="chart-sub">30-day conversion volume per <code style="font-size:0.7rem;background:var(--bg3);padding:1px 5px;border-radius:3px">_sclx</code> action · threshold: 30 / 30d for eligibility</div>
+          </div>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <span style="font-family:'DM Mono',monospace;font-size:0.6rem;padding:2px 6px;border-radius:3px;border:1px solid var(--border2);color:var(--text4)">parallel run</span>
+          </div>
+        </div>
+        <div id="smb-rows" style="display:flex;flex-direction:column;gap:0.4rem">
+          <div class="empty-state" style="padding:0.5rem 0">Computing…</div>
+        </div>
+        <div style="margin-top:0.75rem;padding-top:0.6rem;border-top:1px solid var(--border);font-size:0.65rem;color:var(--text4);font-style:italic">
+          _sclx actions run in parallel with primary conversion actions. Once volume hits threshold, Smart Bidding can use them as bidding signals.
+        </div>
+      </div>
+
+      <div class="ops-strip" id="ops-strip">
+        <span class="ops-label">System</span>
+        <div class="ops-item">
+          <span class="ops-key">Queue</span>
+          <span class="ops-val" id="ph-queue">…</span>
+          <span class="ops-unit">pending</span>
+        </div>
+        <div class="ops-sep">·</div>
+        <div class="ops-item">
+          <span class="ops-key">Batch</span>
+          <span class="ops-val" id="ph-batch">…</span>
+          <span class="ops-unit" id="ph-batch-sub"></span>
+        </div>
+        <div class="ops-sep">·</div>
+        <div class="ops-item">
+          <span class="ops-key">Errors 24h</span>
+          <span class="ops-val" id="ph-errors">…</span>
+          <span class="ops-unit" id="ph-errors-sub"></span>
+        </div>
+        <div class="ops-sep" style="margin-left:auto">·</div>
+        <span class="ops-badge" id="ph-ec-badge">EC: —</span>
+      </div>
+
+      <div class="dash-footer">
+        <div class="footer-left">Live data: Google Sheets log · sGTM (GTM-NL8L86MW) · Apps Script v10.8 (v24) · LSQ CRM · auto-refreshes every 60s</div>
+        <div class="footer-brand">powered by scaletrix.ai · v2 design</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function maskEmail(email) {
+  if (!email || !email.includes('@')) return email;
+  const [user, domain] = email.split('@');
+  const visible = user.slice(0, 2);
+  const masked  = visible + '***@' + domain;
+  return masked;
+}
+
+function maskName(name) {
+  if (!name) return name;
+  const parts = name.trim().split(' ');
+  return parts[0] + (parts.length > 1 ? ' ' + parts[1][0] + '.' : '');
+}
+
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebar-overlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+const CSV_URL       = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSbEGvqdlB_8anAt8_yNmOtpg0PeGBkdBvs0aPcw651qIFxJunBWHtOYeiON_i1Z5DnAzpM5IHKunTw/pub?gid=1418087288&single=true&output=csv';
+const BATCHLOG_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSbEGvqdlB_8anAt8_yNmOtpg0PeGBkdBvs0aPcw651qIFxJunBWHtOYeiON_i1Z5DnAzpM5IHKunTw/pub?gid=745012896&single=true&output=csv&headers=false';
+// FIRESTORE_URL removed — Firestore is not accessible from browser (403). Queue depth now derived from log sheet.
+const REFRESH_MS = 60000;
+
+let allRows = [], activeDays = 30, stageChart = null;
+
+// toggleCustomDate removed — handled by dropdown
+
+
+function applyCustomDate() {
+  const from = document.getElementById('date-from').value;
+  const to   = document.getElementById('date-to').value;
+  if (!from || !to) return;
+  customDateRange = { from: new Date(from), to: new Date(to + 'T23:59:59') };
+  activeDays = 'custom';
+  document.getElementById('date-picker-wrap').classList.remove('open');
+  renderAll();
+}
+
+let customDateRange = null;
+
+// setPeriod removed — handled by handleDateDropdown
+
+
+async function fetchSheetData() {
+  const res  = await fetch(CSV_URL + '&t=' + Date.now());
+  const text = await res.text();
+  return parseCSV(text);
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (lines.length < 2) return [];
+  return lines.slice(1).map(line => {
+    const c = splitCSVLine(line);
+    // Log sheet columns (relay appendRow order):
+    // 0:Timestamp 1:Status 2:OldStage 3:NewStage 4:GCLID 5:Value
+    // 6:ProspectID 7:Name 8:Email 9:Phone 10:Source 11:Medium
+    // 12:Campaign 13:PageUrl 14:LeadScore 15:EngScore 16:FbClid
+    // 17:hEmail 18:hPhone 19:convType 20:message
+    return {
+      timestamp: c[0]||'', status: c[1]||'', oldStage: c[2]||'',
+      newStage: c[3]||'', gclid: c[4]||'', value: parseFloat(c[5])||0,
+      prospectId: c[6]||'', name: c[7]||'', email: c[8]||'',
+      phone: c[9]||'', source: c[10]||'', medium: c[11]||'',
+      campaign: c[12]||'', pageUrl: c[13]||'',
+      convId: c[19]||'',   // convType column — used for bucket classification
+      message: c[20]||''
+    };
+  }).filter(r => r.timestamp && r.status);
+}
+
+function splitCSVLine(line) {
+  const result = []; let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') { inQ = !inQ; continue; }
+    if (ch === ',' && !inQ) { result.push(cur.trim()); cur = ''; continue; }
+    cur += ch;
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+function getDateRange(mode) {
+  const now   = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  switch(mode) {
+    case 'today':
+      return { from: today, to: new Date(today.getTime()+86399999) };
+    case 'yesterday': {
+      const y = new Date(today); y.setDate(y.getDate()-1);
+      return { from: y, to: new Date(y.getTime()+86399999) };
+    }
+    case 'this_month':
+      return { from: new Date(now.getFullYear(), now.getMonth(), 1), to: now };
+    case 'last_month': {
+      const f = new Date(now.getFullYear(), now.getMonth()-1, 1);
+      const t = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+      return { from: f, to: t };
+    }
+    case 'this_quarter': {
+      const q = Math.floor(now.getMonth()/3);
+      return { from: new Date(now.getFullYear(), q*3, 1), to: now };
+    }
+    case 'scalex':
+      return { from: new Date('2026-05-09T00:00:00'), to: now };
+    case 'custom':
+      return customDateRange || { from: null, to: now };
+    default: {
+      const days = parseInt(mode) || 30;
+      const f = new Date(today); f.setDate(f.getDate()-days);
+      return { from: f, to: now };
+    }
+  }
+}
+
+function filterByPeriod(rows, mode) {
+  const { from, to } = getDateRange(mode || activeDays);
+  return rows.filter(r => {
+    const d = new Date(r.timestamp);
+    return !isNaN(d) && (!from || d >= from) && (!to || d <= to);
+  });
+}
+
+function handleDateDropdown(sel) {
+  const val = sel.value;
+  if (val === 'custom') {
+    document.getElementById('date-picker-wrap').classList.add('open');
+    return;
+  }
+  document.getElementById('date-picker-wrap').classList.remove('open');
+  activeDays = val;
+  renderAll();
+}
+
+// ── Status metadata ───────────────────────────────────────────
+const STATUS_META = {
+  'SUCCESS':              { label:'SUCCESS',              color:'#00D4AA', meaning:'Uploaded · GCLID match',             alert:'ok' },
+  'SUCCESS_EC_ONLY':      { label:'SUCCESS_EC_ONLY',      color:'#4C9FFF', meaning:'Uploaded · EC match (no GCLID)',      alert:'ok' },
+  'SKIP_NON_PPC':         { label:'SKIP_NON_PPC',         color:'#52525B', meaning:'Filtered · non-Google source',        alert:'ok' },
+  'SKIP_DROP_STAGE':      { label:'SKIP_DROP_STAGE',      color:'#3F3F46', meaning:'Filtered · inactive stage',           alert:'ok' },
+  'ADJUSTMENT_QUEUED':    { label:'ADJUSTMENT_QUEUED',    color:'#A78BFA', meaning:'Disqualified · restatement queued',   alert:'ok' },
+  'ADJUSTMENT_SKIPPED':   { label:'ADJUSTMENT_SKIPPED',   color:'#6D28D9', meaning:'Disqualified · no prior history',     alert:'ok' },
+  'SKIP_UNKNOWN_STAGE':   { label:'SKIP_UNKNOWN_STAGE',   color:'#FBBF24', meaning:'⚠ Unknown stage — add to STAGE_MAP', alert:'warn' },
+  'NO_GCLID':             { label:'NO_GCLID',             color:'#FB923C', meaning:'No GCLID + no EC identifiers',        alert:'warn' },
+  'GADS_PARTIAL_FAIL':    { label:'GADS_PARTIAL_FAIL',    color:'#F97316', meaning:'Google Ads rejected at upload',       alert:'warn' },
+  'FIRESTORE_FAIL':       { label:'FIRESTORE_FAIL',       color:'#EF4444', meaning:'🚨 Ledger write failed',              alert:'crit' },
+  'PARSE_ERROR':          { label:'PARSE_ERROR',          color:'#DC2626', meaning:'🚨 Malformed webhook payload',        alert:'crit' },
+};
+
+let reconChartInstance = null;
+
+function renderReconciliation(rows) {
+  // ── Last 7 days only ─────────────────────────────────────────
+  const cutoff = new Date(Date.now() - 7 * 86400000);
+  const recent = rows.filter(r => new Date(r.timestamp) >= cutoff);
+  const total  = recent.length;
+
+  const badge = document.getElementById('recon-total-badge');
+  if (badge) badge.textContent = total.toLocaleString('en-IN') + ' events';
+
+  // ── Count by status ──────────────────────────────────────────
+  const counts = {};
+  recent.forEach(r => {
+    const s = r.status || 'UNKNOWN';
+    counts[s] = (counts[s] || 0) + 1;
+  });
+
+  // ── Group by day for stacked bar chart ───────────────────────
+  const dayMap = {};
+  recent.forEach(r => {
+    const d = new Date(r.timestamp);
+    if (isNaN(d)) return;
+    const key = d.toISOString().split('T')[0];
+    if (!dayMap[key]) dayMap[key] = {};
+    const s = r.status || 'UNKNOWN';
+    dayMap[key][s] = (dayMap[key][s] || 0) + 1;
+  });
+  const days = Object.keys(dayMap).sort();
+  const dayLabels = days.map(d => {
+    const dt = new Date(d);
+    return dt.toLocaleDateString('en-IN', { day:'numeric', month:'short' });
+  });
+
+  // Build datasets — ordered by priority for stacking
+  const stackOrder = ['SUCCESS','SUCCESS_EC_ONLY','ADJUSTMENT_QUEUED','ADJUSTMENT_SKIPPED',
+                      'SKIP_NON_PPC','SKIP_DROP_STAGE','SKIP_UNKNOWN_STAGE',
+                      'NO_GCLID','GADS_PARTIAL_FAIL','FIRESTORE_FAIL','PARSE_ERROR'];
+  const datasets = stackOrder
+    .filter(s => counts[s] > 0)
+    .map(s => ({
+      label: s,
+      data:  days.map(d => dayMap[d][s] || 0),
+      backgroundColor: (STATUS_META[s] || { color:'#52525B' }).color,
+      borderWidth: 0,
+    }));
+
+  if (reconChartInstance) { reconChartInstance.destroy(); reconChartInstance = null; }
+  const canvas = document.getElementById('reconChart');
+  if (canvas && datasets.length) {
+    reconChartInstance = new Chart(canvas, {
+      type: 'bar',
+      data: { labels: dayLabels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: chartColors().bg2, borderColor: chartColors().border,
+            borderWidth: 1, titleColor: chartColors().text, bodyColor: chartColors().text4,
+            mode: 'index', intersect: false,
+            callbacks: {
+              footer: items => {
+                const sum = items.reduce((s, i) => s + i.raw, 0);
+                return 'Total: ' + sum;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { stacked: true, grid: { display: false },
+               ticks: { color: chartColors().text4, font: { family: "'DM Mono'", size: 9 } } },
+          y: { stacked: true, grid: { color: chartColors().grid },
+               ticks: { color: chartColors().text4, font: { family: "'DM Mono'", size: 9 } } }
+        }
+      }
+    });
+  }
+
+  // ── Reconciliation table ─────────────────────────────────────
+  const tbody = document.getElementById('recon-tbody');
+  if (!tbody) return;
+  if (!total) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text4);padding:1rem">No events in last 7 days</td></tr>'; return; }
+
+  // Sort: critical first, then warn, then ok — within each group by count desc
+  const sortedStatuses = Object.entries(counts).sort((a, b) => {
+    const metaA = STATUS_META[a[0]] || { alert: 'warn' };
+    const metaB = STATUS_META[b[0]] || { alert: 'warn' };
+    const order  = { crit: 0, warn: 1, ok: 2 };
+    const oa = order[metaA.alert] ?? 1;
+    const ob = order[metaB.alert] ?? 1;
+    return oa !== ob ? oa - ob : b[1] - a[1];
+  });
+
+  tbody.innerHTML = sortedStatuses.map(([status, count]) => {
+    const meta  = STATUS_META[status] || { color: '#52525B', meaning: 'Unknown status', alert: 'warn' };
+    const pct   = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0';
+    const alertClass = meta.alert === 'ok' ? 'ok' : meta.alert === 'warn' ? 'warn' : 'crit';
+    const alertText  = meta.alert === 'ok' ? '✓ normal' : meta.alert === 'warn' ? '⚠ review' : '🚨 fix now';
+    return `<tr>
+      <td><span class="recon-dot" style="background:${meta.color}"></span>${status}</td>
+      <td style="color:var(--text3);font-size:0.68rem">${meta.meaning}</td>
+      <td style="font-weight:600;color:${count > 0 && meta.alert !== 'ok' ? meta.color : 'var(--text)'}">${count.toLocaleString('en-IN')}</td>
+      <td style="color:var(--text4)">${pct}%</td>
+      <td><span class="recon-alert ${alertClass}">${count > 0 || meta.alert === 'ok' ? alertText : '—'}</span></td>
+    </tr>`;
+  }).join('');
+
+  // ── Summary log ──────────────────────────────────────────────
+  const critCount = sortedStatuses.filter(([s]) => (STATUS_META[s]||{}).alert === 'crit').reduce((a,[,c])=>a+c, 0);
+  const warnCount = sortedStatuses.filter(([s]) => (STATUS_META[s]||{}).alert === 'warn' && s !== 'NO_GCLID').reduce((a,[,c])=>a+c, 0);
+  if (critCount > 0) console.log('[Recon] ' + critCount + ' critical events in last 7d');
+  if (warnCount > 0) console.log('[Recon] ' + warnCount + ' warn events in last 7d');
+}
+
+function renderAll() {
+  const rows = filterByPeriod(allRows, activeDays);
+  renderKPIs(rows);
+  renderSignalFlow(rows);
+  renderFeed(allRows);
+  renderECTrend(allRows);
+  renderReconciliation(allRows);  // always last 7 days regardless of date picker
+  renderSmbTile(allRows);         // always last 30 days regardless of date picker
+  renderOpsStrip(allRows);
+  renderRestatementChart();
+}
+
+function renderKPIs(rows) {
+  const successes = rows.filter(r => r.status === 'SUCCESS');
+  const totalValue = successes.reduce((s,r) => s + r.value, 0);
+  document.getElementById('kpi-success').textContent = successes.length;
+  document.getElementById('kpi-success-sub').textContent = '₹' + totalValue.toLocaleString('en-IN') + ' proxy value sent';
+
+  // GCLID match rate — split form vs non-form
+  // Form leads: source contains "form", "brochure", "eligibility", "demo", "download"
+  const formKeywords = /form|brochure|eligib|demo|download|checkelig/i;
+  const allActive = rows.filter(r => r.newStage && r.status !== 'PARSE_ERROR' && r.status !== 'SKIP_NON_PPC');
+
+  const formLeads    = allActive.filter(r => formKeywords.test(r.source || ''));
+  const nonFormLeads = allActive.filter(r => !formKeywords.test(r.source || '') && r.source);
+
+  const formWithGclid    = formLeads.filter(r => r.gclid && r.gclid.length > 10);
+  const nonFormWithGclid = nonFormLeads.filter(r => r.gclid && r.gclid.length > 10);
+
+  const formRate    = formLeads.length > 0    ? Math.round((formWithGclid.length / formLeads.length) * 100)       : 0;
+  const nonFormRate = nonFormLeads.length > 0 ? Math.round((nonFormWithGclid.length / nonFormLeads.length) * 100) : 0;
+
+  document.getElementById('kpi-match-form').textContent    = formRate + '%';
+  document.getElementById('kpi-match-form-sub').textContent = formWithGclid.length + ' of ' + formLeads.length + ' form leads matched';
+  document.getElementById('kpi-match-nonform').textContent    = nonFormRate + '%';
+  document.getElementById('kpi-match-nonform-sub').textContent = nonFormWithGclid.length + ' of ' + nonFormLeads.length + ' call/walk-in leads';
+}
+
+// Only meaningful pipeline stages — filters out noise, test stages, internal categories
+const STAGE_SHOW = new Set([
+  'New Lead','Future Interest','FutureInterest','ML-Enquiry','Enquiry',
+  'Hot','Warm','Re-Enquiry','ReEnquiry','re-enquiry','re enquiry',
+  'Priority-Call','Enrolled','Disqualified','RNR','Not Reachable',
+  'Cold','Junk','Not Interested'
+]);
+
+const STAGE_CONFIG = [
+  { key:'New Lead',        color:'#00D4AA' },
+  { key:'Future Interest', color:'#4C9FFF' },
+  { key:'FutureInterest',  color:'#4C9FFF' },
+  { key:'ML-Enquiry',      color:'#60A5FA' },
+  { key:'Enquiry',         color:'#A78BFA' },
+  { key:'Hot',             color:'#F59E0B' },
+  { key:'Warm',            color:'#FBBF24' },
+  { key:'Re-Enquiry',      color:'#FF6B4A' },
+  { key:'ReEnquiry',       color:'#FF6B4A' },
+  { key:'re-enquiry',      color:'#FF6B4A' },
+  { key:'re enquiry',      color:'#FF6B4A' },
+  { key:'Priority-Call',   color:'#FB923C' },
+  { key:'Enrolled',        color:'#34D399' },
+  { key:'Disqualified',    color:'#52525B' },
+  { key:'RNR',             color:'#3F3F46' },
+  { key:'Not Reachable',   color:'#3F3F46' },
+  { key:'Cold',            color:'#27272A' },
+  { key:'Junk',            color:'#27272A' },
+  { key:'Not Interested',  color:'#27272A' },
+];
+
+function renderFunnel(rows) {
+  // Still populate hidden funnel-stages for any legacy reference
+  const counts = {};
+  rows.forEach(r => { if (r.newStage) counts[r.newStage] = (counts[r.newStage]||0) + 1; });
+  const el = document.getElementById('funnel-stages');
+  if (el) {
+    const maxCount = Math.max(...Object.values(counts), 1);
+    const stages = STAGE_CONFIG.filter(s => counts[s.key] > 0 && STAGE_SHOW.has(s.key));
+    el.innerHTML = stages.map(s => {
+      const count = counts[s.key]||0;
+      const pct = Math.round((count/maxCount)*100);
+      return `<div class="funnel-stage"><div class="stage-name">${s.key}</div><div class="stage-bar-wrap"><div class="stage-bar" style="width:${pct}%;background:${s.color}"></div></div><div class="stage-count">${count}</div></div>`;
+    }).join('');
+  }
+  return counts;
+}
+
+// ── DROP_STAGES list ──────────────────────────────────────────
+const DROP_STAGES = new Set(['AH','Missed Call','Existing']);
+const PPC_SOURCES = new Set(['ppc','google','google_ads']);
+
+function renderSignalFlow(rows) {
+  // ── Inbound counts ──────────────────────────────────────────
+  const allCounts = {};
+  rows.forEach(r => { if (r.newStage) allCounts[r.newStage] = (allCounts[r.newStage]||0) + 1; });
+  const inboundTotal = rows.filter(r => r.newStage).length;
+  const sfInbound = document.getElementById('sf-inbound-count');
+  if (sfInbound) sfInbound.textContent = inboundTotal.toLocaleString('en-IN');
+
+  // Mini bars (top 6 stages)
+  const barsEl = document.getElementById('sf-inbound-bars');
+  if (barsEl) {
+    const topStages = Object.entries(allCounts).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    const maxC = topStages[0]?.[1]||1;
+    barsEl.innerHTML = topStages.map(([stage, count]) => {
+      const pct = Math.round((count/maxC)*100);
+      return `<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+        <div style="font-size:0.62rem;color:var(--text4);width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${stage}</div>
+        <div style="flex:1;background:var(--bg3);border-radius:2px;height:4px"><div style="width:${pct}%;height:100%;background:rgba(76,159,255,0.5);border-radius:2px"></div></div>
+        <div style="font-family:'DM Mono',monospace;font-size:0.62rem;color:var(--text4);width:28px;text-align:right">${count}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Filter stats ────────────────────────────────────────────
+  const ppcPass    = rows.filter(r => r.status === 'SUCCESS' || r.status === 'SUCCESS_EC_ONLY').length;
+  const noGclid    = rows.filter(r => r.status === 'NO_GCLID').length;
+  const skipNonPpc = rows.filter(r => r.status === 'SKIP_NON_PPC').length;
+  const dropStage  = rows.filter(r => r.status === 'SKIP_UNKNOWN_STAGE' || (r.newStage && DROP_STAGES.has(r.newStage))).length;
+  const filteredTotal = rows.length - ppcPass;
+
+  const ppcPassEl = document.getElementById('sf-ppc-pass');
+  if (ppcPassEl) ppcPassEl.textContent = ppcPass.toLocaleString('en-IN') + ' passed';
+  const filtEl = document.getElementById('sf-filtered-total');
+  if (filtEl) filtEl.textContent = (filteredTotal > 0 ? filteredTotal : rows.length - ppcPass).toLocaleString('en-IN');
+  const breakdown = document.getElementById('sf-filter-breakdown');
+  if (breakdown) {
+    breakdown.innerHTML = `
+      non-PPC source: ${skipNonPpc}<br>
+      no GCLID: ${noGclid}<br>
+      drop stages: ${dropStage}`;
+  }
+
+  // ── Outbound donut (value-encoded) ──────────────────────────
+  const outboundTotal = ppcPass;
+  const sfOut = document.getElementById('sf-outbound-count');
+  if (sfOut) sfOut.textContent = outboundTotal.toLocaleString('en-IN');
+
+  // Map conversionId → bucket
+  const bucketMap = {
+    'lead_submitted':'New Lead','signup':'Sign-up','qualified':'Qualified',
+    'converted':'Converted','disqualified':'Disqualified'
+  };
+  const bucketColors = {
+    'New Lead':    'rgba(0,212,170,0.35)',
+    'Sign-up':     'rgba(0,212,170,0.6)',
+    'Qualified':   '#00D4AA',
+    'Converted':   '#003368',
+    'Disqualified':'#52525B'
+  };
+  const bucketCounts = { 'New Lead':0,'Sign-up':0,'Qualified':0,'Converted':0,'Disqualified':0 };
+  rows.filter(r => r.status==='SUCCESS'||r.status==='SUCCESS_EC_ONLY').forEach(r => {
+    const key = r.convId ? (r.convId.toLowerCase().includes('disq') ? 'Disqualified'
+      : r.convId.toLowerCase().includes('sign')||r.convId.toLowerCase().includes('signup') ? 'Sign-up'
+      : r.convId.toLowerCase().includes('qual') ? 'Qualified'
+      : r.convId.toLowerCase().includes('convert') ? 'Converted'
+      : 'New Lead') : 'New Lead';
+    bucketCounts[key]++;
+  });
+
+  const donutLabels = Object.keys(bucketCounts);
+  const donutData   = donutLabels.map(k => bucketCounts[k]);
+  const donutColors = donutLabels.map(k => bucketColors[k]);
+
+  if (window._sfDonutChart) { window._sfDonutChart.destroy(); window._sfDonutChart = null; }
+  const donutCanvas = document.getElementById('sfDonutChart');
+  if (donutCanvas && donutData.some(d => d > 0)) {
+    window._sfDonutChart = new Chart(donutCanvas, {
+      type: 'doughnut',
+      data: { labels: donutLabels, datasets: [{ data: donutData, backgroundColor: donutColors, borderWidth: 0, hoverOffset: 4 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '62%',
+        plugins: {
+          legend: { position:'bottom', labels:{ color:chartColors().text4, font:{family:"'DM Mono'",size:8}, boxWidth:8, padding:5 } },
+          tooltip: {
+            backgroundColor:chartColors().bg2, borderColor:chartColors().border, borderWidth:1,
+            titleColor:chartColors().text, bodyColor:chartColors().text4,
+            callbacks: { label: ctx => {
+              const vals = {'New Lead':'₹200','Sign-up':'₹500','Qualified':'₹2,000','Converted':'₹10,000','Disqualified':'₹1'};
+              return `${ctx.label}: ${ctx.raw} · proxy ${vals[ctx.label]||''}`;
+            }}
+          }
+        }
+      }
+    });
+  }
+}
+
+const STATUS_COLORS = { SUCCESS:'#34D399', SKIP:'#52525B', NO_GCLID:'#FBBF24', PARSE_ERROR:'#EF4444' };
+
+function timeAgo(str) {
+  const d = new Date(str); if (isNaN(d)) return '';
+  const s = Math.floor((Date.now()-d)/1000);
+  if (s < 60) return s+'s ago';
+  if (s < 3600) return Math.floor(s/60)+'m ago';
+  if (s < 86400) return Math.floor(s/3600)+'h ago';
+  return Math.floor(s/86400)+'d ago';
+}
+
+function renderFeed(rows) {
+  const el = document.getElementById('feed-list');
+  const recent = [...rows].filter(r => r.status && r.newStage).slice(-8).reverse();
+  if (!recent.length) { el.innerHTML = '<div class="empty-state">No events yet</div>'; return; }
+  el.innerHTML = recent.map(r => {
+    const color = STATUS_COLORS[r.status]||'#52525B';
+    const label = r.name ? maskName(r.name) : r.email ? maskEmail(r.email) : (r.prospectId ? 'Lead' : 'New Lead');
+    const val = r.status==='SUCCESS' && r.value
+      ? `<div class="feed-value" style="color:${color}">+₹${r.value.toLocaleString('en-IN')}</div>`
+      : `<div class="feed-value" style="color:var(--text4);font-size:0.65rem">${r.status}</div>`;
+    return `<div class="feed-item">
+      <div class="feed-dot" style="background:${color}"></div>
+      <div class="feed-body">
+        <div class="feed-event"><strong>${label}</strong> → ${r.newStage}${!r.oldStage ? ' <span style="font-size:0.6rem;color:var(--teal);opacity:0.7">new</span>' : ''}</div>
+        <div class="feed-meta">${r.source||'unknown'} · ${timeAgo(r.timestamp)}</div>
+        ${r.gclid && r.gclid.length > 10 ? `<div class="feed-meta" style="color:var(--teal);opacity:0.6">${r.gclid.slice(0,8)}…${r.gclid.slice(-4)}</div>` : ''}
+      </div>${val}
+    </div>`;
+  }).join('');
+}
+
+function renderStageChart(rows) {
+  // Delegated to renderSignalFlow — kept for backward compat call in renderAll
+  renderSignalFlow(rows);
+}
+
+// ── Google Ads API fetch ──────────────────────────────────────
+let gadsData = null;
+
+async function fetchGadsStats(days) {
+  const resp = await fetch(`/api/gads-stats?days=${days}&t=` + Date.now());
+  if (!resp.ok) throw new Error('gads-stats API error ' + resp.status);
+  const json = await resp.json();
+  if (!json.success) throw new Error(json.error);
+  return json.data;
+}
+
+function renderGadsKPIs(data) {
+  document.getElementById('kpi-leads').textContent =
+    data.total_conversions.toLocaleString('en-IN');
+  document.getElementById('kpi-leads-sub').textContent =
+    data.total_clicks.toLocaleString('en-IN') + ' clicks · ' + data.period_days + 'd';
+
+  document.getElementById('kpi-cpl').textContent = '₹' + data.cpl.toLocaleString('en-IN');
+  document.getElementById('kpi-cpl-sub').textContent =
+    data.qualified_leads + ' qualified leads';
+
+  document.getElementById('kpi-spend').textContent = '₹' + data.total_spend_lakh + 'L';
+  document.getElementById('kpi-spend-sub').textContent =
+    '₹' + data.total_spend.toLocaleString('en-IN') + ' total spend';
+
+  // Update lift hook CPL: ₹before → ₹after
+  if (data.cpl_before !== undefined && data.cpl !== undefined) {
+    const lhCpl = document.getElementById('lh-cpl-val');
+    if (lhCpl) lhCpl.textContent = '₹' + Math.round(data.cpl_before).toLocaleString('en-IN') + ' → ₹' + Math.round(data.cpl).toLocaleString('en-IN');
+  } else if (data.cpl_change_pct !== undefined) {
+    const lhCpl = document.getElementById('lh-cpl-val');
+    if (lhCpl) lhCpl.textContent = (data.cpl_change_pct > 0 ? '+' : '') + data.cpl_change_pct + '% CPL';
+  }
+  // Incremental leads
+  if (data.incremental_leads !== undefined) {
+    const lhLeads = document.getElementById('lh-leads-val');
+    if (lhLeads) lhLeads.textContent = '+' + data.incremental_leads.toLocaleString('en-IN') + ' leads';
+  } else if (data.conv_change_pct !== undefined) {
+    const lhLeads = document.getElementById('lh-leads-val');
+    if (lhLeads) lhLeads.textContent = (data.conv_change_pct > 0 ? '+' : '') + data.conv_change_pct + '% leads';
+  }
+
+  if (data.campaigns) renderCampaigns(data.campaigns, data.cpl, allRows);
+}
+
+function renderCampaigns(campaigns, avgCpl, logRows) {
+  const wrap = document.getElementById('camp-table-wrap');
+  const sub  = document.getElementById('camp-table-sub');
+
+  if (!campaigns || !campaigns.length) {
+    wrap.innerHTML = '<div class="empty-state">No campaign data available</div>';
+    return;
+  }
+
+  const hasPrev = campaigns.some(c => c.prev_cpl !== null && c.prev_cpl !== undefined);
+
+  // ── Sent to Google: count SUCCESS/EC_ONLY rows per campaign ──
+  const sentMap = {};
+  if (logRows && logRows.length) {
+    const period = filterByPeriod(logRows, activeDays);
+    period.filter(r => r.status === 'SUCCESS' || r.status === 'SUCCESS_EC_ONLY').forEach(r => {
+      const camp = (r.campaign || '').trim().toLowerCase();
+      if (camp) sentMap[camp] = (sentMap[camp] || 0) + 1;
+    });
+  }
+  // Campaign field in log sheet is empty for most rows (LSQ stage-change
+  // webhooks don't include SourceCampaign — it's an unchanged field).
+  // Per-campaign breakdown not possible from log data until relay fix ships.
+  // Show total in footer only; individual rows show — with tooltip.
+  const totalSent = Object.values(sentMap).reduce((a,b)=>a+b,0);
+  function getSent(campName) { return null; }  // always — per row
+  sub.textContent = `Live · Google Ads API · ${campaigns.length} active campaigns · sorted by spend` +
+    (hasPrev ? ' · vs prior period' : '');
+
+  function cplPill(cpl) {
+    if (!cpl) return '<span style="color:var(--text4)">—</span>';
+    const cls = cpl < avgCpl ? 'cpl-good' : cpl < avgCpl * 1.8 ? 'cpl-mid' : 'cpl-bad';
+    return `<span class="cpl-pill ${cls}">₹${cpl.toLocaleString('en-IN')}</span>`;
+  }
+
+  function delta(curr, prev, prefix) {
+    if (prev === null || prev === undefined || prev === 0) return '';
+    const pct = Math.round(((curr - prev) / prev) * 100);
+    if (pct === 0) return `<span class="delta-neutral">—</span>`;
+    // For CPL, lower is better (green = negative pct)
+    const isCpl = prefix === '₹';
+    const good = isCpl ? pct < 0 : pct > 0;
+    const cls = good ? 'delta-good' : 'delta-bad';
+    const arrow = pct > 0 ? '↑' : '↓';
+    return `<span class="${cls}">${arrow}${Math.abs(pct)}%</span>`;
+  }
+
+  function prevCell(curr, prev, prefix) {
+    if (prev === null || prev === undefined) return '';
+    return `<span class="prev-val">${prefix}${prev.toLocaleString('en-IN')} prev</span>`;
+  }
+
+  // ── Bangalore Spotlight ─────────────────────────────────────
+  const blrCamp = campaigns.find(c =>
+    /bangal/i.test(c.name) || /bangalore/i.test(c.name) || /bangaluru/i.test(c.name)
+  );
+  const spotlight = document.getElementById('blr-spotlight');
+  if (spotlight) {
+    if (blrCamp) {
+      spotlight.style.display = 'block';
+
+      // Name
+      const nameEl = document.getElementById('blr-campaign-name');
+      if (nameEl) nameEl.textContent = blrCamp.name;
+
+      // CPL delta
+      const cplDeltaEl = document.getElementById('blr-cpl-delta');
+      const cplAbsEl   = document.getElementById('blr-cpl-abs');
+      if (cplDeltaEl && blrCamp.prev_cpl && blrCamp.cpl) {
+        const cplChg = Math.round(((blrCamp.cpl - blrCamp.prev_cpl) / blrCamp.prev_cpl) * 100);
+        cplDeltaEl.textContent = (cplChg > 0 ? '+' : '') + cplChg + '%';
+        cplDeltaEl.style.color = cplChg < 0 ? 'var(--green)' : 'var(--red)';
+        if (cplAbsEl) cplAbsEl.textContent = '₹' + Math.round(blrCamp.prev_cpl).toLocaleString('en-IN') + ' → ₹' + Math.round(blrCamp.cpl).toLocaleString('en-IN');
+      }
+
+      // Leads delta
+      const leadsDeltaEl = document.getElementById('blr-leads-delta');
+      const leadsAbsEl   = document.getElementById('blr-leads-abs');
+      if (leadsDeltaEl && blrCamp.prev_conversions && blrCamp.conversions) {
+        const leadsChg = Math.round(((blrCamp.conversions - blrCamp.prev_conversions) / blrCamp.prev_conversions) * 100);
+        leadsDeltaEl.textContent = (leadsChg > 0 ? '+' : '') + leadsChg + '%';
+        leadsDeltaEl.style.color = leadsChg > 0 ? 'var(--teal)' : 'var(--red)';
+        if (leadsAbsEl) leadsAbsEl.textContent = Math.round(blrCamp.conversions) + ' leads this period';
+      }
+
+      // Spend
+      const spendEl      = document.getElementById('blr-spend');
+      const spendDeltaEl = document.getElementById('blr-spend-delta');
+      if (spendEl) spendEl.textContent = '₹' + (blrCamp.spend / 100000).toFixed(2) + 'L';
+      if (spendDeltaEl && blrCamp.prev_spend) {
+        const spendChg = Math.round(((blrCamp.spend - blrCamp.prev_spend) / blrCamp.prev_spend) * 100);
+        spendDeltaEl.textContent = (spendChg > 0 ? '↑' : '↓') + Math.abs(spendChg) + '% vs prior';
+      }
+
+      // CPL Sparkline — before vs after bars
+      if (window._blrSparkline) { window._blrSparkline.destroy(); window._blrSparkline = null; }
+      const spark = document.getElementById('blrSparkline');
+      if (spark) {
+        const beforeCpl = blrCamp.prev_cpl || 0;
+        const afterCpl  = blrCamp.cpl || 0;
+        window._blrSparkline = new Chart(spark, {
+          type: 'bar',
+          data: {
+            labels: ['Prior period', 'This period'],
+            datasets: [{
+              data: [beforeCpl, afterCpl],
+              backgroundColor: ['rgba(82,82,91,0.5)', 'rgba(0,212,170,0.75)'],
+              borderRadius: 4,
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: chartColors().bg2, borderColor: chartColors().border, borderWidth: 1,
+                titleColor: chartColors().text, bodyColor: chartColors().text4,
+                callbacks: { label: ctx => '₹' + ctx.raw.toLocaleString('en-IN') + ' CPL' }
+              }
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: chartColors().text4, font: { family: "'DM Mono'", size: 9 } } },
+              y: { grid: { color: chartColors().grid }, ticks: { color: chartColors().text4, font: { family: "'DM Mono'", size: 9 }, callback: v => '₹' + v } }
+            }
+          }
+        });
+      }
+    } else {
+      spotlight.style.display = 'none';
+    }
+  }
+
+  wrap.innerHTML = `
+  <div style="overflow-x:auto">
+  <table class="camp-table">
+    <thead>
+      <tr>
+        <th>Campaign</th>
+        <th>Spend${hasPrev?' · vs prev':''}</th>
+        <th>Clicks</th>
+        <th>CTR</th>
+        <th>Conv.${hasPrev?' · vs prev':''}</th>
+        <th>Sent to Google</th>
+        <th>CPL${hasPrev?' · vs prev':''}</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${campaigns.map((c, ci) => {
+        const sent = getSent(c.name);
+        // Compute 5-bucket breakdown from logRows for this campaign
+        const campLog = (logRows || []).filter(r => {
+          const rc = (r.campaign || '').trim().toLowerCase();
+          const cn = c.name.trim().toLowerCase();
+          return (r.status === 'SUCCESS' || r.status === 'SUCCESS_EC_ONLY') &&
+                 (rc === cn || cn.includes(rc) || rc.includes(cn));
+        });
+        const buckets = {
+          'lead_submitted': { label:'New Lead', value:'₹200',  color:'rgba(0,212,170,0.4)', count:0 },
+          'signup':         { label:'Sign-up',  value:'₹500',  color:'rgba(0,212,170,0.65)', count:0 },
+          'qualified':      { label:'Qualified',value:'₹2,000',color:'#00D4AA', count:0 },
+          'converted':      { label:'Enrolled', value:'₹10,000',color:'#003368', count:0 },
+          'disqualified':   { label:'Disqualified',value:'₹1',  color:'#52525B', count:0 },
+        };
+        campLog.forEach(r => {
+          const cid = (r.convId || r.conv_id || '').toLowerCase();
+          if      (cid.includes('disq'))    buckets['disqualified'].count++;
+          else if (cid.includes('convert')) buckets['converted'].count++;
+          else if (cid.includes('qual'))    buckets['qualified'].count++;
+          else if (cid.includes('sign'))    buckets['signup'].count++;
+          else                              buckets['lead_submitted'].count++;
+        });
+        const qual    = buckets['qualified'].count;
+        const enroll  = buckets['converted'].count;
+        const enrollRate = qual > 0 ? Math.round((enroll / qual) * 100) : null;
+
+        const expandHtml = Object.entries(buckets).map(([k, b], bi, arr) =>
+          `<div class="bucket-item">
+            <div class="bucket-count" style="color:${b.color}">${b.count}</div>
+            <div class="bucket-label">${b.label}</div>
+            <div class="bucket-value">${b.value}</div>
+          </div>${bi < arr.length-1 ? '<div class="bucket-arrow">→</div>' : ''}`
+        ).join('');
+
+        return `
+      <tr class="camp-row" onclick="toggleCampRow(${ci})">
+        <td title="${c.name}">${c.name}</td>
+        <td>₹${c.spend.toLocaleString('en-IN')} ${delta(c.spend, c.prev_spend, '₹')}
+          ${prevCell(c.spend, c.prev_spend, '₹')}</td>
+        <td>${c.clicks.toLocaleString('en-IN')}</td>
+        <td>${c.ctr}%</td>
+        <td>${c.conversions} ${delta(c.conversions, c.prev_conversions, '')}
+          ${prevCell(c.conversions, c.prev_conversions, '')}</td>
+        <td title="Per-campaign breakdown pending relay update"><span style="color:var(--text4)">—</span></td>
+        <td>${cplPill(c.cpl)} ${delta(c.cpl, c.prev_cpl, '₹')}
+          ${prevCell(c.cpl, c.prev_cpl, '₹')}</td>
+      </tr>
+      <tr class="camp-expand-row" id="camp-expand-${ci}" style="display:none">
+        <td colspan="7">
+          <div class="bucket-funnel">
+            ${expandHtml}
+            ${enrollRate !== null ? `<div class="enroll-rate">SQL→Enrolled: ${enrollRate}%</div>` : ''}
+          </div>
+          ${campLog.length === 0 ? '<div style="color:var(--text4);font-size:0.7rem;margin-top:0.4rem">No ScaleX events matched for this campaign in current period</div>' : ''}
+        </td>
+      </tr>`;
+      }).join('')}
+    </tbody>
+    <tfoot>
+      <tr style="border-top:2px solid var(--border2)">
+        <td style="color:var(--text3);font-family:'DM Sans',sans-serif">Total / Average</td>
+        <td style="color:var(--text)">₹${campaigns.reduce((s,c)=>s+c.spend,0).toLocaleString('en-IN')}</td>
+        <td style="color:var(--text)">${campaigns.reduce((s,c)=>s+c.clicks,0).toLocaleString('en-IN')}</td>
+        <td>—</td>
+        <td style="color:var(--text)">${Math.round(campaigns.reduce((s,c)=>s+c.conversions,0)*10)/10}</td>
+        <td style="color:var(--teal);font-family:'DM Mono',monospace;font-size:0.75rem" title="Total ScaleX conversions sent to Google Ads in this period">${totalSent||'—'}</td>
+        <td>${cplPill(avgCpl)}</td>
+      </tr>
+    </tfoot>
+  </table>
+  </div>`;
+}
+
+let cplChartInstance = null;
+
+
+// ── Ops heartbeat strip ───────────────────────────────────────
+function renderOpsStrip(rows) {
+  // EC rate for badge
+  const success = rows.filter(r => r.status === 'SUCCESS').length;
+  const ecOnly  = rows.filter(r => r.status === 'SUCCESS_EC_ONLY').length;
+  const total   = success + ecOnly;
+  const ecRate  = total > 0 ? Math.round((ecOnly / total) * 100) : 0;
+  const ecBadge = document.getElementById('ph-ec-badge');
+  if (ecBadge) ecBadge.textContent = 'EC: ' + ecRate + '%';
+
+  // Errors 24h
+  const cutoff24 = new Date(Date.now() - 86400000);
+  const recent   = rows.filter(r => new Date(r.timestamp) >= cutoff24);
+  const errorStatuses = ['SKIP_UNKNOWN_STAGE','FIRESTORE_FAIL','HTTP_503'];
+  const errorCount = recent.filter(r => errorStatuses.includes(r.status)).length;
+  const errEl  = document.getElementById('ph-errors');
+  const errSub = document.getElementById('ph-errors-sub');
+  if (errEl) { errEl.textContent = errorCount; errEl.style.color = errorCount > 0 ? 'var(--amber)' : 'var(--green)'; }
+  if (errSub) errSub.textContent = errorCount > 0 ? '⚠' : '✓';
+
+  // Adj Queue depth — derived from log sheet (ADJUSTMENT_QUEUED in last 48h)
+  // Previously fetched directly from Firestore (caused 403 spam in console).
+  // Now computed from allRows which is already loaded.
+  const ph_queue = document.getElementById('ph-queue');
+  if (ph_queue) {
+    const cutoff48 = new Date(Date.now() - 48 * 3600000);
+    const queued = rows.filter(r =>
+      r.status === 'ADJUSTMENT_QUEUED' && new Date(r.timestamp) >= cutoff48
+    ).length;
+    ph_queue.textContent = queued;
+    ph_queue.style.color = queued > 5 ? 'var(--amber)' : 'var(--green)';
+  }
+
+  // Batch Run (BatchLog)
+  const ph_batch     = document.getElementById('ph-batch');
+  const ph_batch_sub = document.getElementById('ph-batch-sub');
+  if (!ph_batch) return;
+  fetch(BATCHLOG_URL + '&t=' + Date.now())
+    .then(r => r.text())
+    .then(csv => {
+      const lines = csv.trim().split('\n').filter(l => l.trim());
+      if (lines.length < 2) { ph_batch.textContent = '—'; return; }
+      const last   = lines[lines.length - 1].split(',');
+      const ts     = last[0] ? last[0].replace(/"/g,'').trim() : '';
+      const status = last[1] ? last[1].replace(/"/g,'').trim() : '';
+      const proc   = last[2] ? last[2].replace(/"/g,'').trim() : '0';
+      if (!ts) { ph_batch.textContent = '—'; return; }
+      const runTime  = new Date(ts);
+      const hoursAgo = (Date.now() - runTime) / 3600000;
+      const isStale  = hoursAgo > 26;
+      ph_batch.textContent = status === 'EMPTY' ? 'EMPTY' : status + ' · ' + proc + ' sent';
+      ph_batch.style.color = isStale ? 'var(--coral)' : (status === 'SUCCESS' || status === 'EMPTY') ? 'var(--green)' : 'var(--amber)';
+      if (ph_batch_sub) ph_batch_sub.textContent = Math.round(hoursAgo) + 'h ago' + (isStale ? ' ⚠' : '');
+    })
+    .catch(() => { ph_batch.textContent = '—'; });
+}
+
+// ── EC Recovery trend chart ───────────────────────────────────
+let ecTrendChartInstance = null;
+function renderECTrend(rows) {
+  // Group by calendar date
+  const byDate = {};
+  rows.forEach(r => {
+    if (r.status !== 'SUCCESS' && r.status !== 'SUCCESS_EC_ONLY') return;
+    const d = new Date(r.timestamp);
+    if (isNaN(d)) return;
+    const key = d.toISOString().split('T')[0];
+    if (!byDate[key]) byDate[key] = { ec: 0, total: 0 };
+    byDate[key].total++;
+    if (r.status === 'SUCCESS_EC_ONLY') byDate[key].ec++;
+  });
+  const dates  = Object.keys(byDate).sort();
+  const labels = dates.map(d => {
+    const dt = new Date(d);
+    return dt.toLocaleDateString('en-IN', { day:'numeric', month:'short' });
+  });
+  const rates  = dates.map(d => byDate[d].total > 0 ? Math.round((byDate[d].ec / byDate[d].total) * 100) : 0);
+
+  if (ecTrendChartInstance) { ecTrendChartInstance.destroy(); ecTrendChartInstance = null; }
+  const canvas = document.getElementById('ecTrendChart');
+  if (!canvas) return;
+  if (!dates.length) { canvas.parentElement.innerHTML = '<div class="empty-state" style="padding:2rem 0">No conversion data yet</div>'; return; }
+
+  ecTrendChartInstance = new Chart(canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'EC Recovery %',
+        data: rates,
+        borderColor: '#A78BFA',
+        borderWidth: 2,
+        pointBackgroundColor: '#A78BFA',
+        pointRadius: 3,
+        tension: 0.4,
+        fill: { target: 'origin', above: 'rgba(167,139,250,0.07)' }
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor:chartColors().bg2, borderColor:chartColors().border, borderWidth:1,
+          titleColor:chartColors().text, bodyColor:chartColors().text4,
+          callbacks: { label: ctx => ctx.raw + '% EC recovery · ' + (byDate[dates[ctx.dataIndex]]?.ec||0) + ' of ' + (byDate[dates[ctx.dataIndex]]?.total||0) } }
+      },
+      scales: {
+        x: { grid:{color:chartColors().grid}, ticks:{color:chartColors().text4,font:{family:"'DM Mono'",size:9}} },
+        y: { min:0, max:100, grid:{color:chartColors().grid},
+          ticks:{color:'#52525B',font:{family:"'DM Mono'",size:9},callback:v=>v+'%'} }
+      }
+    }
+  });
+
+  // Update lift hook EC stat
+  const allEc    = rows.filter(r => r.status === 'SUCCESS_EC_ONLY').length;
+  const allTotal = rows.filter(r => r.status === 'SUCCESS' || r.status === 'SUCCESS_EC_ONLY').length;
+  const overallRate = allTotal > 0 ? Math.round((allEc / allTotal) * 100) : 0;
+  const lhEc = document.getElementById('lh-ec-val');
+  if (lhEc) lhEc.textContent = overallRate + '% recovered';
+}
+
+// ── Restatement cascade chart (from BatchLog) ─────────────────
+let restateChartInstance = null;
+function renderRestatementChart() {
+  fetch(BATCHLOG_URL + '&t=' + Date.now())
+    .then(r => r.text())
+    .then(csv => {
+      const lines = csv.trim().split('\n').filter(l => l.trim()).slice(1); // skip header
+
+      // ── Parse all 6 columns from BatchLog ──────────────────
+      // Cols: Timestamp, Status, Processed, Dropped, Failed, Message
+      const parsed = [];
+      lines.forEach(line => {
+        // Handle commas inside quoted fields (message column)
+        const cols = [];
+        let cur = '', inQ = false;
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i];
+          if (ch === '"') { inQ = !inQ; }
+          else if (ch === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+          else { cur += ch; }
+        }
+        cols.push(cur.trim());
+
+        const ts     = cols[0] ? cols[0].replace(/"/g,'').trim() : '';
+        const status = cols[1] ? cols[1].replace(/"/g,'').trim() : '';
+        const proc   = parseInt(cols[2])||0;
+        const drop   = parseInt(cols[3])||0;
+        const fail   = parseInt(cols[4])||0;
+        const msg    = cols[5] ? cols[5].replace(/"/g,'').trim() : '';
+        if (!ts) return;
+        const d = new Date(ts);
+        if (isNaN(d)) return;
+        parsed.push({ ts, d, status, proc, drop, fail, msg });
+      });
+
+      // ── Group by calendar date (sum all runs per day) ───────
+      const byDate = {};
+      parsed.forEach(r => {
+        const key = r.d.toISOString().split('T')[0];
+        if (!byDate[key]) byDate[key] = { sent:0, dropped:0, failed:0, hasPartialFail:false, lastStatus:'' };
+        byDate[key].sent    += r.proc;
+        byDate[key].dropped += r.drop;
+        byDate[key].failed  += r.fail;
+        byDate[key].lastStatus = r.status;
+        if (r.status === 'PARTIAL_FAIL') byDate[key].hasPartialFail = true;
+      });
+
+      const dates  = Object.keys(byDate).sort();
+      const labels = dates.map(d => { const dt=new Date(d); return dt.toLocaleDateString('en-IN',{day:'numeric',month:'short'}); });
+      const sent   = dates.map(d => byDate[d].sent);
+      const dropped= dates.map(d => byDate[d].dropped);
+      const failed = dates.map(d => byDate[d].failed);
+      const hasFailed = failed.some(v => v > 0);
+
+      // ── Last 7 days restatements for lift hook ───────────────
+      const sevenDaysAgo = new Date(Date.now() - 7*86400000);
+      let last7sent = 0;
+      parsed.forEach(r => { if (r.d >= sevenDaysAgo) last7sent += r.proc; });
+      const lhR = document.getElementById('lh-restate-val');
+      if (lhR) lhR.textContent = last7sent + ' corrections';
+
+      // ── Bug 5 / PARTIAL_FAIL note ────────────────────────────
+      const noteEl = document.getElementById('sf-restate-note');
+      if (noteEl) {
+        // Check if any PARTIAL_FAIL rows exist with "conversion_identifier can't be found"
+        const hasHistoricalFail = parsed.some(r =>
+          r.status === 'PARTIAL_FAIL' && r.msg.includes("can't be found")
+        );
+        const hasSettingFail = parsed.some(r =>
+          r.status === 'PARTIAL_FAIL' && r.msg.includes('default value')
+        );
+        if (hasSettingFail || hasHistoricalFail) {
+          // "Use different values" fix was applied May 23
+          noteEl.textContent = '⚠ Pre-May 23: rejected by Google (use-different-values config) — resolved';
+          noteEl.style.color = 'var(--text4)';
+        } else {
+          noteEl.textContent = '';
+        }
+      }
+
+      if (restateChartInstance) { restateChartInstance.destroy(); restateChartInstance = null; }
+      const canvas = document.getElementById('restateChart');
+      if (!canvas) return;
+      if (!dates.length) {
+        canvas.parentElement.innerHTML = '<div class="empty-state" style="padding:1rem 0">No batch data yet</div>';
+        return;
+      }
+
+      // ── 3-outcome stacked bar chart ──────────────────────────
+      const datasets = [
+        {
+          label: 'Sent to Google',
+          data: sent,
+          backgroundColor: 'rgba(0,212,170,0.75)',
+          borderRadius: 3
+        },
+        {
+          label: 'Dropped (pre-API · no GCLID)',
+          data: dropped,
+          backgroundColor: 'rgba(82,82,91,0.45)',
+          borderRadius: 3
+        }
+      ];
+
+      // Only show Failed dataset if relay is populating it (v10.6+)
+      if (hasFailed) {
+        datasets.push({
+          label: 'Rejected by Google',
+          data: failed,
+          backgroundColor: 'rgba(239,68,68,0.65)',
+          borderRadius: 3
+        });
+      }
+
+      restateChartInstance = new Chart(canvas, {
+        type: 'bar',
+        data: { labels, datasets },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { color:chartColors().text4, font:{family:"'DM Mono'",size:9}, boxWidth:10, padding:6 }
+            },
+            tooltip: {
+              backgroundColor: chartColors().bg2, borderColor: chartColors().border,
+              borderWidth: 1, titleColor: chartColors().text, bodyColor: chartColors().text4,
+              callbacks: {
+                afterBody: ctx => {
+                  const idx  = ctx[0].dataIndex;
+                  const date = dates[idx];
+                  const day  = byDate[date];
+                  const total = day.sent + day.dropped + day.failed;
+                  const lines = [`Total: ${total}`];
+                  if (day.hasPartialFail) lines.push('⚠ PARTIAL_FAIL — some rejected');
+                  if (day.failed > 0)     lines.push(`Rejected by Google: ${day.failed}`);
+                  if (day.dropped > 0)    lines.push(`Dropped pre-API (no GCLID): ${day.dropped}`);
+                  return lines;
+                }
+              }
+            }
+          },
+          scales: {
+            x: { stacked:true, grid:{display:false}, ticks:{color:chartColors().text4,font:{family:"'DM Mono'",size:9}} },
+            y: { stacked:true, grid:{color:chartColors().grid}, ticks:{color:chartColors().text4,font:{family:"'DM Mono'",size:9}} }
+          }
+        }
+      });
+    })
+    .catch(err => console.warn('BatchLog fetch failed:', err));
+}
+
+// ── Smart Bidding Maturity ───────────────────────────────────
+function renderSmbTile(rows) {
+  const wrap = document.getElementById('smb-rows');
+  if (!wrap) return;
+
+  // 30-day window
+  const cutoff30 = new Date(Date.now() - 30 * 86400000);
+  const last30   = rows.filter(r => new Date(r.timestamp) >= cutoff30);
+
+  // _sclx action definitions
+  const SCLX_ACTIONS = [
+    { id:'lead_submitted', label:'lead_submitted_sclx',  threshold:30, value:'₹200' },
+    { id:'signup',         label:'signup_sclx',          threshold:30, value:'₹500' },
+    { id:'qualified',      label:'qualified_sclx',       threshold:30, value:'₹2,000' },
+    { id:'converted',      label:'converted_sclx',       threshold:30, value:'₹10,000' },
+    { id:'disqualified',   label:'disqualified_sclx',    threshold:30, value:'₹1' },
+  ];
+
+  // Count SUCCESS/EC_ONLY rows per action
+  const counts = {};
+  last30.filter(r => r.status === 'SUCCESS' || r.status === 'SUCCESS_EC_ONLY').forEach(r => {
+    const cid = (r.convId || r.conv_id || '').toLowerCase();
+    if      (cid.includes('disq'))    counts['disqualified']   = (counts['disqualified']||0)   + 1;
+    else if (cid.includes('convert')) counts['converted']      = (counts['converted']||0)      + 1;
+    else if (cid.includes('qual'))    counts['qualified']      = (counts['qualified']||0)      + 1;
+    else if (cid.includes('sign'))    counts['signup']         = (counts['signup']||0)         + 1;
+    else                              counts['lead_submitted'] = (counts['lead_submitted']||0) + 1;
+  });
+
+  const maxCount = Math.max(...SCLX_ACTIONS.map(a => counts[a.id]||0), 30);
+
+  wrap.innerHTML = SCLX_ACTIONS.map(a => {
+    const count     = counts[a.id] || 0;
+    const pct       = Math.min(Math.round((count / maxCount) * 100), 100);
+    const eligible  = count >= a.threshold;
+    const barColor  = eligible ? 'var(--green)' : count > 15 ? 'var(--amber)' : 'rgba(82,82,91,0.5)';
+    const badge     = eligible
+      ? `<span class="smb-badge eligible">✓ Eligible (${count}/${a.threshold})</span>`
+      : `<span class="smb-badge limited">⚠ Limited (${count}/${a.threshold})</span>`;
+    return `<div class="smb-row">
+      <div class="smb-action" title="${a.label}">${a.label}</div>
+      <div class="smb-bar-wrap"><div class="smb-bar" style="width:${pct}%;background:${barColor}"></div></div>
+      <div class="smb-count" style="color:${barColor}">${count}</div>
+      ${badge}
+      <div style="font-size:0.6rem;color:var(--text4);min-width:40px;text-align:right">${a.value}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Campaign row expand/collapse ─────────────────────────────
+function toggleCampRow(idx) {
+  const expandRow = document.getElementById('camp-expand-' + idx);
+  const campRows  = document.querySelectorAll('.camp-row');
+  if (!expandRow) return;
+  const isOpen = expandRow.style.display !== 'none';
+  expandRow.style.display = isOpen ? 'none' : 'table-row';
+  if (campRows[idx]) campRows[idx].classList.toggle('expanded', !isOpen);
+}
+
+// ── CSS var resolver for Chart.js (can't read CSS vars natively) ─
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+function chartColors() {
+  return {
+    grid:    cssVar('--chart-grid') || 'rgba(255,255,255,0.025)',
+    text4:   cssVar('--text4')      || '#52525B',
+    text:    cssVar('--text')       || '#D4D4D8',
+    bg2:     cssVar('--bg2')        || '#111113',
+    border:  cssVar('--border')     || '#1E1E22',
+    teal:    cssVar('--teal')       || '#00D4AA',
+    purple:  cssVar('--purple')     || '#A78BFA',
+  };
+}
+
+function initCplChart(weeklyCpl, weeklyLeads) {
+  const labels = ['W1','W2','W3','W4','W5','W6','W7','W8','W9','W10','W11','W12'];
+
+  const splitAt = 5;
+  const before  = weeklyCpl
+    ? weeklyCpl.map((v,i) => i <= splitAt ? v : null)
+    : [620,615,628,610,605,null,null,null,null,null,null,null];
+  const after   = weeklyCpl
+    ? weeklyCpl.map((v,i) => i >= splitAt ? v : null)
+    : [null,null,null,null,null,590,560,530,510,488,472,468];
+  const leads   = weeklyLeads
+    ? weeklyLeads
+    : [42,38,45,41,44,null,51,58,67,72,79,84];
+
+  if (cplChartInstance) { cplChartInstance.destroy(); cplChartInstance = null; }
+
+  // Milestone plugin — date-anchored labels
+  // W6=ScaleX(index 5), EC=May 9(index 7), v9.1=May 12(index 9), v10=May 16(index 10)
+  const milestones = [
+    { index:5,  label:'ScaleX',  desc:'Server-side activation',       color:'rgba(0,212,170,0.7)' },
+    { index:7,  label:'EC Live', desc:'Enhanced Conversions active',   color:'rgba(167,139,250,0.65)' },
+    { index:9,  label:'v9.1',    desc:'5-action structure · May 12',   color:'rgba(76,159,255,0.6)' },
+    { index:10, label:'v10',     desc:'RESTATEMENT cascade · May 16',  color:'rgba(251,191,36,0.65)' }
+  ];
+
+  const milestonePlugin = {
+    id:'milestones',
+    afterDraw(chart) {
+      const { ctx, chartArea:{ top, bottom }, scales:{ x } } = chart;
+      milestones.forEach(m => {
+        if (m.index >= labels.length) return;
+        const xPos = x.getPixelForValue(m.index);
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([3,3]);
+        ctx.strokeStyle = m.color;
+        ctx.lineWidth = 1.5;
+        ctx.moveTo(xPos, top + 14);
+        ctx.lineTo(xPos, bottom);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Label background pill
+        ctx.font = "bold 8px 'DM Mono'";
+        const tw = ctx.measureText(m.label).width + 6;
+        ctx.fillStyle = m.color.replace(/[\d.]+\)$/, '0.15)');
+        ctx.beginPath();
+        ctx.roundRect ? ctx.roundRect(xPos - tw/2, top + 2, tw, 11, 3) : ctx.rect(xPos-tw/2, top+2, tw, 11);
+        ctx.fill();
+        ctx.fillStyle = m.color;
+        ctx.textAlign = 'center';
+        ctx.fillText(m.label, xPos, top + 10);
+        ctx.restore();
+      });
+    }
+  };
+
+  cplChartInstance = new Chart(document.getElementById('cplChart'), {
+    type: 'line',
+    plugins: [milestonePlugin],
+    data: {
+      labels,
+      datasets: [
+        { label:'Before ScaleX (CPL)', data:before, yAxisID:'y',
+          borderColor:'rgba(82,82,91,0.6)', borderWidth:2, borderDash:[4,3],
+          pointBackgroundColor:'rgba(82,82,91,0.6)', pointRadius:3, tension:0.3, spanGaps:false },
+        { label:'After ScaleX (CPL)', data:after, yAxisID:'y',
+          borderColor:'#00D4AA', borderWidth:2,
+          pointBackgroundColor:'#00D4AA', pointRadius:3, tension:0.3, spanGaps:false,
+          fill:{target:'origin',above:'rgba(0,212,170,0.04)'} },
+        { label:'Leads volume', data:leads, yAxisID:'y2',
+          borderColor:'rgba(76,159,255,0.5)', borderWidth:1.5, borderDash:[2,2],
+          pointBackgroundColor:'rgba(76,159,255,0.5)', pointRadius:2, tension:0.4,
+          spanGaps:true }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      plugins: {
+        legend:{ labels:{ color:chartColors().text4, font:{family:"'DM Mono'",size:9}, boxWidth:10, padding:10 } },
+        tooltip:{
+          backgroundColor:chartColors().bg2, borderColor:chartColors().border, borderWidth:1,
+          titleColor:chartColors().text, bodyColor:chartColors().text4,
+          callbacks:{
+            label: ctx => {
+              if (ctx.dataset.yAxisID === 'y2') return 'Leads: ' + (ctx.raw||'—');
+              return ctx.datasetIndex === 0 ? 'Before: ₹'+(ctx.raw||'—') : 'After: ₹'+(ctx.raw||'—');
+            }
+          }
+        }
+      },
+      scales: {
+        x:{ grid:{color:chartColors().grid}, ticks:{color:chartColors().text4,font:{family:"'DM Mono'",size:9}} },
+        y:{ position:'left', grid:{color:chartColors().grid},
+          ticks:{color:chartColors().text4,font:{family:"'DM Mono'",size:9},callback:v=>'₹'+v} },
+        y2:{ position:'right', grid:{display:false},
+          ticks:{color:'rgba(76,159,255,0.6)',font:{family:"'DM Mono'",size:9}},
+          title:{display:true,text:'Leads',color:'rgba(76,159,255,0.5)',font:{size:9}} }
+      }
+    }
+  });
+}
+
+async function loadData() {
+  const btn = document.getElementById('refresh-btn');
+  btn.classList.add('spinning');
+  try {
+    // Fetch both sources in parallel
+    const [sheetRows, gads] = await Promise.allSettled([
+      fetchSheetData(),
+      fetchGadsStats(activeDays),
+    ]);
+
+    if (sheetRows.status === 'fulfilled') {
+      allRows = sheetRows.value;
+      renderAll();
+    }
+
+    if (gads.status === 'fulfilled') {
+      gadsData = gads.value;
+      renderGadsKPIs(gadsData);
+      initCplChart(gadsData.weekly_cpl, gadsData.weekly_leads || null);
+    } else {
+      console.warn('Google Ads fetch failed:', gads.reason);
+      initCplChart(null, null); // fallback to sample data
+    }
+
+    const now = new Date().toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'});
+    document.getElementById('last-updated').textContent = 'Last updated: ' + now;
+    document.getElementById('live-status').textContent  = 'Live · sGTM active';
+  } catch(err) {
+    console.error(err);
+    document.getElementById('last-updated').textContent = 'Error loading — retrying in 60s';
+    document.getElementById('live-status').textContent  = 'Connection error';
+  } finally {
+    btn.classList.remove('spinning');
+  }
+}
+
+// ── Theme toggle ─────────────────────────────────────────────
+function toggleTheme() {
+  const root     = document.documentElement;
+  const isDark   = root.getAttribute('data-theme') === 'dark';
+  const newTheme = isDark ? 'light' : 'dark';
+  root.setAttribute('data-theme', isDark ? '' : 'dark');
+  localStorage.setItem('scalex-theme-v2', newTheme === 'dark' ? 'dark' : 'light');
+  // swap icons
+  document.getElementById('theme-icon-dark').style.display  = isDark ? 'none'  : '';
+  document.getElementById('theme-icon-light').style.display = isDark ? ''      : 'none';
+  // Redraw charts with new grid colour
+  if (cplChartInstance)     { initCplChart(gadsData?.weekly_cpl || null, gadsData?.weekly_leads || null); }
+  if (ecTrendChartInstance) { renderECTrend(allRows); }
+  renderSignalFlow(filterByPeriod(allRows, activeDays));
+  if (reconChartInstance) { renderReconciliation(allRows); }
+  if (restateChartInstance) { renderRestatementChart(); }
+}
+
+// Restore saved theme on load
+(function() {
+  // v2 defaults to light mode; saved preference overrides
+  const saved = localStorage.getItem('scalex-theme-v2');
+  const isDark = saved === 'dark';
+  if (isDark) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    const dark  = document.getElementById('theme-icon-dark');
+    const light = document.getElementById('theme-icon-light');
+    if (dark)  dark.style.display  = '';
+    if (light) light.style.display = 'none';
+  }
+})();
+
+initCplChart(null, null); // renders with sample data until gads loads
+loadData();
+setInterval(loadData, REFRESH_MS);
+</script>
+</body>
+</html>
