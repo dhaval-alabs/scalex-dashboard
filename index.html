@@ -750,12 +750,19 @@ function parseCSV(text) {
   if (lines.length < 2) return [];
   return lines.slice(1).map(line => {
     const c = splitCSVLine(line);
+    // Log sheet columns (relay appendRow order):
+    // 0:Timestamp 1:Status 2:OldStage 3:NewStage 4:GCLID 5:Value
+    // 6:ProspectID 7:Name 8:Email 9:Phone 10:Source 11:Medium
+    // 12:Campaign 13:PageUrl 14:LeadScore 15:EngScore 16:FbClid
+    // 17:hEmail 18:hPhone 19:convType 20:message
     return {
       timestamp: c[0]||'', status: c[1]||'', oldStage: c[2]||'',
       newStage: c[3]||'', gclid: c[4]||'', value: parseFloat(c[5])||0,
       prospectId: c[6]||'', name: c[7]||'', email: c[8]||'',
       phone: c[9]||'', source: c[10]||'', medium: c[11]||'',
-      campaign: c[12]||'', pageUrl: c[13]||'', message: c[17]||''
+      campaign: c[12]||'', pageUrl: c[13]||'',
+      convId: c[19]||'',   // convType column — used for bucket classification
+      message: c[20]||''
     };
   }).filter(r => r.timestamp && r.status);
 }
@@ -1242,16 +1249,12 @@ function renderCampaigns(campaigns, avgCpl, logRows) {
       if (camp) sentMap[camp] = (sentMap[camp] || 0) + 1;
     });
   }
-  // Match campaign name (Google Ads name) to log campaign field
-  function getSent(campName) {
-    if (!campName) return null;
-    const key = campName.trim().toLowerCase();
-    // Direct match
-    if (sentMap[key] !== undefined) return sentMap[key];
-    // Partial match — log campaign may be shorter slug
-    const match = Object.keys(sentMap).find(k => key.includes(k) || k.includes(key));
-    return match !== undefined ? sentMap[match] : null;
-  }
+  // Campaign field in log sheet is empty for most rows (LSQ stage-change
+  // webhooks don't include SourceCampaign — it's an unchanged field).
+  // Per-campaign breakdown not possible from log data until relay fix ships.
+  // Show total in footer only; individual rows show — with tooltip.
+  const totalSent = Object.values(sentMap).reduce((a,b)=>a+b,0);
+  function getSent(campName) { return null; }  // always — per row
   sub.textContent = `Live · Google Ads API · ${campaigns.length} active campaigns · sorted by spend` +
     (hasPrev ? ' · vs prior period' : '');
 
@@ -1418,7 +1421,7 @@ function renderCampaigns(campaigns, avgCpl, logRows) {
         <td>${c.ctr}%</td>
         <td>${c.conversions} ${delta(c.conversions, c.prev_conversions, '')}
           ${prevCell(c.conversions, c.prev_conversions, '')}</td>
-        <td style="color:var(--teal)">${(()=>{const s=getSent(c.name);return s!==null?s+'<span style=\"font-size:0.62rem;color:var(--text4);margin-left:3px\">sclx</span>':'<span style=\"color:var(--text4)\">—</span>'})()}</td>
+        <td title="Per-campaign breakdown pending relay update"><span style="color:var(--text4)">—</span></td>
         <td>${cplPill(c.cpl)} ${delta(c.cpl, c.prev_cpl, '₹')}
           ${prevCell(c.cpl, c.prev_cpl, '₹')}</td>
       </tr>
@@ -1440,7 +1443,7 @@ function renderCampaigns(campaigns, avgCpl, logRows) {
         <td style="color:var(--text)">${campaigns.reduce((s,c)=>s+c.clicks,0).toLocaleString('en-IN')}</td>
         <td>—</td>
         <td style="color:var(--text)">${Math.round(campaigns.reduce((s,c)=>s+c.conversions,0)*10)/10}</td>
-        <td style="color:var(--teal);font-family:'IBM Plex Mono',monospace;font-size:0.75rem">${Object.values(sentMap).reduce((a,b)=>a+b,0)||'—'}</td>
+        <td style="color:var(--teal);font-family:'IBM Plex Mono',monospace;font-size:0.75rem" title="Total ScaleX conversions sent to Google Ads in this period">${totalSent||'—'}</td>
         <td>${cplPill(avgCpl)}</td>
       </tr>
     </tfoot>
