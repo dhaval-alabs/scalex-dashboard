@@ -716,7 +716,7 @@ function closeSidebar() {
 
 const CSV_URL       = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSbEGvqdlB_8anAt8_yNmOtpg0PeGBkdBvs0aPcw651qIFxJunBWHtOYeiON_i1Z5DnAzpM5IHKunTw/pub?gid=1418087288&single=true&output=csv';
 const BATCHLOG_URL  = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSbEGvqdlB_8anAt8_yNmOtpg0PeGBkdBvs0aPcw651qIFxJunBWHtOYeiON_i1Z5DnAzpM5IHKunTw/pub?gid=745012896&single=true&output=csv&headers=false';
-const FIRESTORE_URL = 'https://firestore.googleapis.com/v1/projects/analytixlabs-ads/databases/default/documents/clients/4064995850/adjustment_queue?pageSize=1000';
+// FIRESTORE_URL removed — Firestore is not accessible from browser (403). Queue depth now derived from log sheet.
 const REFRESH_MS = 60000;
 
 let allRows = [], activeDays = 30, stageChart = null;
@@ -950,8 +950,8 @@ function renderReconciliation(rows) {
   // ── Summary log ──────────────────────────────────────────────
   const critCount = sortedStatuses.filter(([s]) => (STATUS_META[s]||{}).alert === 'crit').reduce((a,[,c])=>a+c, 0);
   const warnCount = sortedStatuses.filter(([s]) => (STATUS_META[s]||{}).alert === 'warn' && s !== 'NO_GCLID').reduce((a,[,c])=>a+c, 0);
-  if (critCount > 0) console.warn('Reconciliation: ' + critCount + ' critical events in last 7d — investigate immediately');
-  if (warnCount > 0) console.info('Reconciliation: ' + warnCount + ' warn events in last 7d — review advised');
+  if (critCount > 0) console.log('[Recon] ' + critCount + ' critical events in last 7d');
+  if (warnCount > 0) console.log('[Recon] ' + warnCount + ' warn events in last 7d');
 }
 
 function renderAll() {
@@ -1471,20 +1471,17 @@ function renderOpsStrip(rows) {
   if (errEl) { errEl.textContent = errorCount; errEl.style.color = errorCount > 0 ? 'var(--amber)' : 'var(--green)'; }
   if (errSub) errSub.textContent = errorCount > 0 ? '⚠' : '✓';
 
-  // Adj Queue depth (Firestore)
+  // Adj Queue depth — derived from log sheet (ADJUSTMENT_QUEUED in last 48h)
+  // Previously fetched directly from Firestore (caused 403 spam in console).
+  // Now computed from allRows which is already loaded.
   const ph_queue = document.getElementById('ph-queue');
   if (ph_queue) {
-    fetch(FIRESTORE_URL)
-      .then(r => r.json())
-      .then(data => {
-        const pending = (data.documents||[]).filter(d => {
-          const s = d.fields && d.fields.status && d.fields.status.stringValue;
-          return s === 'pending';
-        }).length;
-        ph_queue.textContent = pending;
-        ph_queue.style.color = pending > 5 ? 'var(--amber)' : 'var(--green)';
-      })
-      .catch(() => { ph_queue.textContent = '—'; });
+    const cutoff48 = new Date(Date.now() - 48 * 3600000);
+    const queued = rows.filter(r =>
+      r.status === 'ADJUSTMENT_QUEUED' && new Date(r.timestamp) >= cutoff48
+    ).length;
+    ph_queue.textContent = queued;
+    ph_queue.style.color = queued > 5 ? 'var(--amber)' : 'var(--green)';
   }
 
   // Batch Run (BatchLog)
