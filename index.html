@@ -162,6 +162,19 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
   .sf-feed-zone{border-left:none;padding-left:0;border-top:1px solid var(--border);padding-top:0.75rem}
 }
 
+.recon-card{margin-bottom:1.25rem}
+.recon-table{width:100%;border-collapse:collapse;font-size:0.75rem}
+.recon-table th{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--text4);padding:0.4rem 0.75rem;text-align:left;border-bottom:1px solid var(--border);font-weight:500;white-space:nowrap}
+.recon-table th:nth-child(3),.recon-table th:nth-child(4),.recon-table th:nth-child(5){text-align:right}
+.recon-table td{padding:0.45rem 0.75rem;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle;font-size:0.72rem}
+.recon-table td:nth-child(3),.recon-table td:nth-child(4),.recon-table td:nth-child(5){text-align:right;font-family:'IBM Plex Mono',monospace}
+.recon-table tr:last-child td{border-bottom:none}
+.recon-table tr:hover td{background:var(--bg3)}
+.recon-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;flex-shrink:0}
+.recon-alert{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;padding:1px 5px;border-radius:3px}
+.recon-alert.ok{color:var(--green);background:rgba(52,211,153,0.1)}
+.recon-alert.warn{color:var(--amber);background:rgba(251,191,36,0.1)}
+.recon-alert.crit{color:var(--red);background:rgba(239,68,68,0.1)}
 .ops-strip{display:flex;align-items:center;gap:0.5rem;padding:0.6rem 1rem;background:linear-gradient(90deg,rgba(167,139,250,0.05),var(--bg2) 50%);border:1px solid var(--border);border-radius:var(--radius2);margin-bottom:1.25rem;flex-wrap:wrap}
 .ops-label{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text4);margin-right:0.25rem;white-space:nowrap}
 .ops-item{display:flex;align-items:center;gap:0.3rem}
@@ -527,6 +540,29 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 
     </div>
 
+      <!-- ── Reconciliation widget ── -->
+      <div class="chart-card recon-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Signal Reconciliation — Last 7 Days</div>
+            <div class="chart-sub">Every CRM event accounted for · status breakdown by day</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.75rem">
+            <span id="recon-total-badge" style="font-family:'IBM Plex Mono',monospace;font-size:0.68rem;padding:2px 8px;border-radius:3px;background:var(--teal-dim);color:var(--teal)">— events</span>
+            <div class="live-tag"><div class="live-dot"></div>live</div>
+          </div>
+        </div>
+        <div style="position:relative;height:130px;margin-bottom:0.75rem"><canvas id="reconChart"></canvas></div>
+        <div style="overflow-x:auto">
+          <table class="recon-table">
+            <thead><tr>
+              <th>Status</th><th>Meaning</th><th>7d total</th><th>% of all</th><th>Alert</th>
+            </tr></thead>
+            <tbody id="recon-tbody"><tr><td colspan="5" style="text-align:center;color:var(--text4);padding:1rem">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- Campaign breakdown — live from Google Ads -->
       <div class="chart-card" style="margin-bottom:1.25rem">
         <div class="chart-header">
@@ -709,12 +745,143 @@ function handleDateDropdown(sel) {
   renderAll();
 }
 
+// ── Status metadata ───────────────────────────────────────────
+const STATUS_META = {
+  'SUCCESS':              { label:'SUCCESS',              color:'#00D4AA', meaning:'Uploaded · GCLID match',             alert:'ok' },
+  'SUCCESS_EC_ONLY':      { label:'SUCCESS_EC_ONLY',      color:'#4C9FFF', meaning:'Uploaded · EC match (no GCLID)',      alert:'ok' },
+  'SKIP_NON_PPC':         { label:'SKIP_NON_PPC',         color:'#52525B', meaning:'Filtered · non-Google source',        alert:'ok' },
+  'SKIP_DROP_STAGE':      { label:'SKIP_DROP_STAGE',      color:'#3F3F46', meaning:'Filtered · inactive stage',           alert:'ok' },
+  'ADJUSTMENT_QUEUED':    { label:'ADJUSTMENT_QUEUED',    color:'#A78BFA', meaning:'Disqualified · restatement queued',   alert:'ok' },
+  'ADJUSTMENT_SKIPPED':   { label:'ADJUSTMENT_SKIPPED',   color:'#6D28D9', meaning:'Disqualified · no prior history',     alert:'ok' },
+  'SKIP_UNKNOWN_STAGE':   { label:'SKIP_UNKNOWN_STAGE',   color:'#FBBF24', meaning:'⚠ Unknown stage — add to STAGE_MAP', alert:'warn' },
+  'NO_GCLID':             { label:'NO_GCLID',             color:'#FB923C', meaning:'No GCLID + no EC identifiers',        alert:'warn' },
+  'GADS_PARTIAL_FAIL':    { label:'GADS_PARTIAL_FAIL',    color:'#F97316', meaning:'Google Ads rejected at upload',       alert:'warn' },
+  'FIRESTORE_FAIL':       { label:'FIRESTORE_FAIL',       color:'#EF4444', meaning:'🚨 Ledger write failed',              alert:'crit' },
+  'PARSE_ERROR':          { label:'PARSE_ERROR',          color:'#DC2626', meaning:'🚨 Malformed webhook payload',        alert:'crit' },
+};
+
+let reconChartInstance = null;
+
+function renderReconciliation(rows) {
+  // ── Last 7 days only ─────────────────────────────────────────
+  const cutoff = new Date(Date.now() - 7 * 86400000);
+  const recent = rows.filter(r => new Date(r.timestamp) >= cutoff);
+  const total  = recent.length;
+
+  const badge = document.getElementById('recon-total-badge');
+  if (badge) badge.textContent = total.toLocaleString('en-IN') + ' events';
+
+  // ── Count by status ──────────────────────────────────────────
+  const counts = {};
+  recent.forEach(r => {
+    const s = r.status || 'UNKNOWN';
+    counts[s] = (counts[s] || 0) + 1;
+  });
+
+  // ── Group by day for stacked bar chart ───────────────────────
+  const dayMap = {};
+  recent.forEach(r => {
+    const d = new Date(r.timestamp);
+    if (isNaN(d)) return;
+    const key = d.toISOString().split('T')[0];
+    if (!dayMap[key]) dayMap[key] = {};
+    const s = r.status || 'UNKNOWN';
+    dayMap[key][s] = (dayMap[key][s] || 0) + 1;
+  });
+  const days = Object.keys(dayMap).sort();
+  const dayLabels = days.map(d => {
+    const dt = new Date(d);
+    return dt.toLocaleDateString('en-IN', { day:'numeric', month:'short' });
+  });
+
+  // Build datasets — ordered by priority for stacking
+  const stackOrder = ['SUCCESS','SUCCESS_EC_ONLY','ADJUSTMENT_QUEUED','ADJUSTMENT_SKIPPED',
+                      'SKIP_NON_PPC','SKIP_DROP_STAGE','SKIP_UNKNOWN_STAGE',
+                      'NO_GCLID','GADS_PARTIAL_FAIL','FIRESTORE_FAIL','PARSE_ERROR'];
+  const datasets = stackOrder
+    .filter(s => counts[s] > 0)
+    .map(s => ({
+      label: s,
+      data:  days.map(d => dayMap[d][s] || 0),
+      backgroundColor: (STATUS_META[s] || { color:'#52525B' }).color,
+      borderWidth: 0,
+    }));
+
+  if (reconChartInstance) { reconChartInstance.destroy(); reconChartInstance = null; }
+  const canvas = document.getElementById('reconChart');
+  if (canvas && datasets.length) {
+    reconChartInstance = new Chart(canvas, {
+      type: 'bar',
+      data: { labels: dayLabels, datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: chartColors().bg2, borderColor: chartColors().border,
+            borderWidth: 1, titleColor: chartColors().text, bodyColor: chartColors().text4,
+            mode: 'index', intersect: false,
+            callbacks: {
+              footer: items => {
+                const sum = items.reduce((s, i) => s + i.raw, 0);
+                return 'Total: ' + sum;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { stacked: true, grid: { display: false },
+               ticks: { color: chartColors().text4, font: { family: "'IBM Plex Mono'", size: 9 } } },
+          y: { stacked: true, grid: { color: chartColors().grid },
+               ticks: { color: chartColors().text4, font: { family: "'IBM Plex Mono'", size: 9 } } }
+        }
+      }
+    });
+  }
+
+  // ── Reconciliation table ─────────────────────────────────────
+  const tbody = document.getElementById('recon-tbody');
+  if (!tbody) return;
+  if (!total) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text4);padding:1rem">No events in last 7 days</td></tr>'; return; }
+
+  // Sort: critical first, then warn, then ok — within each group by count desc
+  const sortedStatuses = Object.entries(counts).sort((a, b) => {
+    const metaA = STATUS_META[a[0]] || { alert: 'warn' };
+    const metaB = STATUS_META[b[0]] || { alert: 'warn' };
+    const order  = { crit: 0, warn: 1, ok: 2 };
+    const oa = order[metaA.alert] ?? 1;
+    const ob = order[metaB.alert] ?? 1;
+    return oa !== ob ? oa - ob : b[1] - a[1];
+  });
+
+  tbody.innerHTML = sortedStatuses.map(([status, count]) => {
+    const meta  = STATUS_META[status] || { color: '#52525B', meaning: 'Unknown status', alert: 'warn' };
+    const pct   = total > 0 ? ((count / total) * 100).toFixed(1) : '0.0';
+    const alertClass = meta.alert === 'ok' ? 'ok' : meta.alert === 'warn' ? 'warn' : 'crit';
+    const alertText  = meta.alert === 'ok' ? '✓ normal' : meta.alert === 'warn' ? '⚠ review' : '🚨 fix now';
+    return `<tr>
+      <td><span class="recon-dot" style="background:${meta.color}"></span>${status}</td>
+      <td style="color:var(--text3);font-size:0.68rem">${meta.meaning}</td>
+      <td style="font-weight:600;color:${count > 0 && meta.alert !== 'ok' ? meta.color : 'var(--text)'}">${count.toLocaleString('en-IN')}</td>
+      <td style="color:var(--text4)">${pct}%</td>
+      <td><span class="recon-alert ${alertClass}">${count > 0 || meta.alert === 'ok' ? alertText : '—'}</span></td>
+    </tr>`;
+  }).join('');
+
+  // ── Summary log ──────────────────────────────────────────────
+  const critCount = sortedStatuses.filter(([s]) => (STATUS_META[s]||{}).alert === 'crit').reduce((a,[,c])=>a+c, 0);
+  const warnCount = sortedStatuses.filter(([s]) => (STATUS_META[s]||{}).alert === 'warn' && s !== 'NO_GCLID').reduce((a,[,c])=>a+c, 0);
+  if (critCount > 0) console.warn('Reconciliation: ' + critCount + ' critical events in last 7d — investigate immediately');
+  if (warnCount > 0) console.info('Reconciliation: ' + warnCount + ' warn events in last 7d — review advised');
+}
+
 function renderAll() {
   const rows = filterByPeriod(allRows, activeDays);
   renderKPIs(rows);
-  renderSignalFlow(rows);   // Inbound→Filter→Outbound + donut
-  renderFeed(allRows);      // Live feed sidebar
+  renderSignalFlow(rows);
+  renderFeed(allRows);
   renderECTrend(allRows);
+  renderReconciliation(allRows);  // always last 7 days regardless of date picker
   renderOpsStrip(allRows);
   renderRestatementChart();
 }
@@ -1501,6 +1668,7 @@ function toggleTheme() {
   if (cplChartInstance)     { initCplChart(gadsData?.weekly_cpl || null, gadsData?.weekly_leads || null); }
   if (ecTrendChartInstance) { renderECTrend(allRows); }
   renderSignalFlow(filterByPeriod(allRows, activeDays));
+  if (reconChartInstance) { renderReconciliation(allRows); }
   if (restateChartInstance) { renderRestatementChart(); }
 }
 
