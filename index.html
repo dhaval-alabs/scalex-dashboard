@@ -175,6 +175,15 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .recon-alert.ok{color:var(--green);background:rgba(52,211,153,0.1)}
 .recon-alert.warn{color:var(--amber);background:rgba(251,191,36,0.1)}
 .recon-alert.crit{color:var(--red);background:rgba(239,68,68,0.1)}
+.smb-row{display:flex;align-items:center;gap:0.75rem;padding:0.35rem 0;border-bottom:1px solid var(--border)}
+.smb-row:last-child{border-bottom:none}
+.smb-action{font-family:'IBM Plex Mono',monospace;font-size:0.68rem;color:var(--text3);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.smb-bar-wrap{flex:1.5;background:var(--bg3);border-radius:3px;height:6px;overflow:hidden}
+.smb-bar{height:100%;border-radius:3px;transition:width 0.4s}
+.smb-count{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;font-weight:600;min-width:36px;text-align:right}
+.smb-badge{font-family:'IBM Plex Mono',monospace;font-size:0.6rem;padding:1px 6px;border-radius:3px;white-space:nowrap}
+.smb-badge.eligible{color:var(--green);background:rgba(52,211,153,0.1)}
+.smb-badge.limited{color:var(--amber);background:rgba(251,191,36,0.1)}
 .ops-strip{display:flex;align-items:center;gap:0.5rem;padding:0.6rem 1rem;background:linear-gradient(90deg,rgba(167,139,250,0.05),var(--bg2) 50%);border:1px solid var(--border);border-radius:var(--radius2);margin-bottom:1.25rem;flex-wrap:wrap}
 .ops-label{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text4);margin-right:0.25rem;white-space:nowrap}
 .ops-item{display:flex;align-items:center;gap:0.3rem}
@@ -202,6 +211,18 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .camp-table tr:last-child td{border-bottom:none}
 .camp-table tr:hover td{background:var(--bg3)}
 .camp-table tbody tr:hover td:first-child{color:var(--teal)}
+.camp-table tbody tr.camp-row{cursor:pointer}
+.camp-table tbody tr.camp-row td:first-child::before{content:'▶ ';font-size:0.55rem;color:var(--text4);margin-right:2px;transition:transform 0.2s}
+.camp-table tbody tr.camp-row.expanded td:first-child::before{content:'▼ '}
+.camp-expand-row{background:var(--bg3) !important}
+.camp-expand-row td{padding:0.75rem 1rem !important;border-bottom:1px solid var(--border2) !important}
+.bucket-funnel{display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center}
+.bucket-item{display:flex;flex-direction:column;align-items:center;gap:0.2rem;min-width:80px}
+.bucket-label{font-size:0.6rem;color:var(--text4);font-family:'IBM Plex Mono',monospace;text-align:center;white-space:nowrap}
+.bucket-count{font-family:'IBM Plex Mono',monospace;font-size:1rem;font-weight:700;color:var(--text);line-height:1}
+.bucket-value{font-size:0.58rem;color:var(--text4)}
+.bucket-arrow{color:var(--border2);font-size:0.75rem;align-self:center;margin-top:-0.5rem}
+.enroll-rate{font-family:'IBM Plex Mono',monospace;font-size:0.72rem;color:var(--teal);margin-left:auto;padding-left:1rem;border-left:1px solid var(--border2)}
 .cpl-pill{display:inline-block;padding:1px 7px;border-radius:3px;font-size:0.68rem;font-weight:600}
 .cpl-good{background:rgba(52,211,153,0.12);color:var(--green)}
 .cpl-mid{background:rgba(251,191,36,0.12);color:var(--amber)}
@@ -563,6 +584,45 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         </div>
       </div>
 
+      <!-- ── Bangalore Spotlight card ── -->
+      <div class="chart-card blr-spotlight" id="blr-spotlight" style="display:none;margin-bottom:1.25rem;border-top:2px solid var(--amber);background:linear-gradient(135deg,rgba(251,191,36,0.04) 0%,var(--bg2) 50%)">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+
+          <!-- Left: headline stats -->
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--amber);margin-bottom:0.5rem">★ Bangalore · Campaign Spotlight</div>
+            <div style="font-size:0.82rem;color:var(--text3);margin-bottom:0.75rem" id="blr-campaign-name">DS-Bangaluru-Leads-Search</div>
+            <div style="display:flex;gap:1.5rem;flex-wrap:wrap">
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:1.8rem;font-weight:700;color:var(--green);line-height:1" id="blr-cpl-delta">−58%</div>
+                <div style="font-size:0.68rem;color:var(--text4);margin-top:0.2rem">CPL reduction</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:var(--text3);margin-top:0.15rem" id="blr-cpl-abs">₹484 → ₹204</div>
+              </div>
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:1.8rem;font-weight:700;color:var(--teal);line-height:1" id="blr-leads-delta">+255%</div>
+                <div style="font-size:0.68rem;color:var(--text4);margin-top:0.2rem">leads growth</div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:0.75rem;color:var(--text3);margin-top:0.15rem" id="blr-leads-abs">— leads this period</div>
+              </div>
+              <div>
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:1.8rem;font-weight:700;color:var(--blue);line-height:1" id="blr-spend">—</div>
+                <div style="font-size:0.68rem;color:var(--text4);margin-top:0.2rem">ad spend</div>
+                <div style="font-size:0.68rem;color:var(--text3);margin-top:0.15rem" id="blr-spend-delta"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: CPL sparkline -->
+          <div style="flex-shrink:0;min-width:180px">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text4);margin-bottom:0.4rem">CPL trend · this vs prior period</div>
+            <div style="position:relative;height:70px;width:100%"><canvas id="blrSparkline"></canvas></div>
+          </div>
+
+        </div>
+        <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border);font-size:0.7rem;color:var(--text4);font-style:italic">
+          ScaleX server-side tracking capturing phone + walk-in leads previously lost. Experiment campaign running alongside brand terms.
+        </div>
+      </div>
+
       <!-- Campaign breakdown — live from Google Ads -->
       <div class="chart-card" style="margin-bottom:1.25rem">
         <div class="chart-header">
@@ -578,6 +638,25 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
       </div>
 
       <!-- ── Ops heartbeat strip ── -->
+      <!-- ── Smart Bidding Maturity tile ── -->
+      <div class="chart-card smb-tile" style="margin-bottom:1.25rem">
+        <div class="chart-header" style="margin-bottom:0.75rem">
+          <div>
+            <div class="chart-title">Smart Bidding Maturity</div>
+            <div class="chart-sub">30-day conversion volume per <code style="font-size:0.7rem;background:var(--bg3);padding:1px 5px;border-radius:3px">_sclx</code> action · threshold: 30 / 30d for eligibility</div>
+          </div>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.6rem;padding:2px 6px;border-radius:3px;border:1px solid var(--border2);color:var(--text4)">parallel run</span>
+          </div>
+        </div>
+        <div id="smb-rows" style="display:flex;flex-direction:column;gap:0.4rem">
+          <div class="empty-state" style="padding:0.5rem 0">Computing…</div>
+        </div>
+        <div style="margin-top:0.75rem;padding-top:0.6rem;border-top:1px solid var(--border);font-size:0.65rem;color:var(--text4);font-style:italic">
+          _sclx actions run in parallel with primary conversion actions. Once volume hits threshold, Smart Bidding can use them as bidding signals.
+        </div>
+      </div>
+
       <div class="ops-strip" id="ops-strip">
         <span class="ops-label">System</span>
         <div class="ops-item">
@@ -882,6 +961,7 @@ function renderAll() {
   renderFeed(allRows);
   renderECTrend(allRows);
   renderReconciliation(allRows);  // always last 7 days regardless of date picker
+  renderSmbTile(allRows);         // always last 30 days regardless of date picker
   renderOpsStrip(allRows);
   renderRestatementChart();
 }
@@ -1139,10 +1219,10 @@ function renderGadsKPIs(data) {
     if (lhLeads) lhLeads.textContent = (data.conv_change_pct > 0 ? '+' : '') + data.conv_change_pct + '% leads';
   }
 
-  if (data.campaigns) renderCampaigns(data.campaigns, data.cpl);
+  if (data.campaigns) renderCampaigns(data.campaigns, data.cpl, allRows);
 }
 
-function renderCampaigns(campaigns, avgCpl) {
+function renderCampaigns(campaigns, avgCpl, logRows) {
   const wrap = document.getElementById('camp-table-wrap');
   const sub  = document.getElementById('camp-table-sub');
 
@@ -1152,6 +1232,26 @@ function renderCampaigns(campaigns, avgCpl) {
   }
 
   const hasPrev = campaigns.some(c => c.prev_cpl !== null && c.prev_cpl !== undefined);
+
+  // ── Sent to Google: count SUCCESS/EC_ONLY rows per campaign ──
+  const sentMap = {};
+  if (logRows && logRows.length) {
+    const period = filterByPeriod(logRows, activeDays);
+    period.filter(r => r.status === 'SUCCESS' || r.status === 'SUCCESS_EC_ONLY').forEach(r => {
+      const camp = (r.campaign || '').trim().toLowerCase();
+      if (camp) sentMap[camp] = (sentMap[camp] || 0) + 1;
+    });
+  }
+  // Match campaign name (Google Ads name) to log campaign field
+  function getSent(campName) {
+    if (!campName) return null;
+    const key = campName.trim().toLowerCase();
+    // Direct match
+    if (sentMap[key] !== undefined) return sentMap[key];
+    // Partial match — log campaign may be shorter slug
+    const match = Object.keys(sentMap).find(k => key.includes(k) || k.includes(key));
+    return match !== undefined ? sentMap[match] : null;
+  }
   sub.textContent = `Live · Google Ads API · ${campaigns.length} active campaigns · sorted by spend` +
     (hasPrev ? ' · vs prior period' : '');
 
@@ -1178,6 +1278,86 @@ function renderCampaigns(campaigns, avgCpl) {
     return `<span class="prev-val">${prefix}${prev.toLocaleString('en-IN')} prev</span>`;
   }
 
+  // ── Bangalore Spotlight ─────────────────────────────────────
+  const blrCamp = campaigns.find(c =>
+    /bangal/i.test(c.name) || /bangalore/i.test(c.name) || /bangaluru/i.test(c.name)
+  );
+  const spotlight = document.getElementById('blr-spotlight');
+  if (spotlight) {
+    if (blrCamp) {
+      spotlight.style.display = 'block';
+
+      // Name
+      const nameEl = document.getElementById('blr-campaign-name');
+      if (nameEl) nameEl.textContent = blrCamp.name;
+
+      // CPL delta
+      const cplDeltaEl = document.getElementById('blr-cpl-delta');
+      const cplAbsEl   = document.getElementById('blr-cpl-abs');
+      if (cplDeltaEl && blrCamp.prev_cpl && blrCamp.cpl) {
+        const cplChg = Math.round(((blrCamp.cpl - blrCamp.prev_cpl) / blrCamp.prev_cpl) * 100);
+        cplDeltaEl.textContent = (cplChg > 0 ? '+' : '') + cplChg + '%';
+        cplDeltaEl.style.color = cplChg < 0 ? 'var(--green)' : 'var(--red)';
+        if (cplAbsEl) cplAbsEl.textContent = '₹' + Math.round(blrCamp.prev_cpl).toLocaleString('en-IN') + ' → ₹' + Math.round(blrCamp.cpl).toLocaleString('en-IN');
+      }
+
+      // Leads delta
+      const leadsDeltaEl = document.getElementById('blr-leads-delta');
+      const leadsAbsEl   = document.getElementById('blr-leads-abs');
+      if (leadsDeltaEl && blrCamp.prev_conversions && blrCamp.conversions) {
+        const leadsChg = Math.round(((blrCamp.conversions - blrCamp.prev_conversions) / blrCamp.prev_conversions) * 100);
+        leadsDeltaEl.textContent = (leadsChg > 0 ? '+' : '') + leadsChg + '%';
+        leadsDeltaEl.style.color = leadsChg > 0 ? 'var(--teal)' : 'var(--red)';
+        if (leadsAbsEl) leadsAbsEl.textContent = Math.round(blrCamp.conversions) + ' leads this period';
+      }
+
+      // Spend
+      const spendEl      = document.getElementById('blr-spend');
+      const spendDeltaEl = document.getElementById('blr-spend-delta');
+      if (spendEl) spendEl.textContent = '₹' + (blrCamp.spend / 100000).toFixed(2) + 'L';
+      if (spendDeltaEl && blrCamp.prev_spend) {
+        const spendChg = Math.round(((blrCamp.spend - blrCamp.prev_spend) / blrCamp.prev_spend) * 100);
+        spendDeltaEl.textContent = (spendChg > 0 ? '↑' : '↓') + Math.abs(spendChg) + '% vs prior';
+      }
+
+      // CPL Sparkline — before vs after bars
+      if (window._blrSparkline) { window._blrSparkline.destroy(); window._blrSparkline = null; }
+      const spark = document.getElementById('blrSparkline');
+      if (spark) {
+        const beforeCpl = blrCamp.prev_cpl || 0;
+        const afterCpl  = blrCamp.cpl || 0;
+        window._blrSparkline = new Chart(spark, {
+          type: 'bar',
+          data: {
+            labels: ['Prior period', 'This period'],
+            datasets: [{
+              data: [beforeCpl, afterCpl],
+              backgroundColor: ['rgba(82,82,91,0.5)', 'rgba(0,212,170,0.75)'],
+              borderRadius: 4,
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: chartColors().bg2, borderColor: chartColors().border, borderWidth: 1,
+                titleColor: chartColors().text, bodyColor: chartColors().text4,
+                callbacks: { label: ctx => '₹' + ctx.raw.toLocaleString('en-IN') + ' CPL' }
+              }
+            },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: chartColors().text4, font: { family: "'IBM Plex Mono'", size: 9 } } },
+              y: { grid: { color: chartColors().grid }, ticks: { color: chartColors().text4, font: { family: "'IBM Plex Mono'", size: 9 }, callback: v => '₹' + v } }
+            }
+          }
+        });
+      }
+    } else {
+      spotlight.style.display = 'none';
+    }
+  }
+
   wrap.innerHTML = `
   <div style="overflow-x:auto">
   <table class="camp-table">
@@ -1188,12 +1368,49 @@ function renderCampaigns(campaigns, avgCpl) {
         <th>Clicks</th>
         <th>CTR</th>
         <th>Conv.${hasPrev?' · vs prev':''}</th>
+        <th>Sent to Google</th>
         <th>CPL${hasPrev?' · vs prev':''}</th>
       </tr>
     </thead>
     <tbody>
-      ${campaigns.map(c => `
-      <tr>
+      ${campaigns.map((c, ci) => {
+        const sent = getSent(c.name);
+        // Compute 5-bucket breakdown from logRows for this campaign
+        const campLog = (logRows || []).filter(r => {
+          const rc = (r.campaign || '').trim().toLowerCase();
+          const cn = c.name.trim().toLowerCase();
+          return (r.status === 'SUCCESS' || r.status === 'SUCCESS_EC_ONLY') &&
+                 (rc === cn || cn.includes(rc) || rc.includes(cn));
+        });
+        const buckets = {
+          'lead_submitted': { label:'New Lead', value:'₹200',  color:'rgba(0,212,170,0.4)', count:0 },
+          'signup':         { label:'Sign-up',  value:'₹500',  color:'rgba(0,212,170,0.65)', count:0 },
+          'qualified':      { label:'Qualified',value:'₹2,000',color:'#00D4AA', count:0 },
+          'converted':      { label:'Enrolled', value:'₹10,000',color:'#003368', count:0 },
+          'disqualified':   { label:'Disqualified',value:'₹1',  color:'#52525B', count:0 },
+        };
+        campLog.forEach(r => {
+          const cid = (r.convId || r.conv_id || '').toLowerCase();
+          if      (cid.includes('disq'))    buckets['disqualified'].count++;
+          else if (cid.includes('convert')) buckets['converted'].count++;
+          else if (cid.includes('qual'))    buckets['qualified'].count++;
+          else if (cid.includes('sign'))    buckets['signup'].count++;
+          else                              buckets['lead_submitted'].count++;
+        });
+        const qual    = buckets['qualified'].count;
+        const enroll  = buckets['converted'].count;
+        const enrollRate = qual > 0 ? Math.round((enroll / qual) * 100) : null;
+
+        const expandHtml = Object.entries(buckets).map(([k, b], bi, arr) =>
+          `<div class="bucket-item">
+            <div class="bucket-count" style="color:${b.color}">${b.count}</div>
+            <div class="bucket-label">${b.label}</div>
+            <div class="bucket-value">${b.value}</div>
+          </div>${bi < arr.length-1 ? '<div class="bucket-arrow">→</div>' : ''}`
+        ).join('');
+
+        return `
+      <tr class="camp-row" onclick="toggleCampRow(${ci})">
         <td title="${c.name}">${c.name}</td>
         <td>₹${c.spend.toLocaleString('en-IN')} ${delta(c.spend, c.prev_spend, '₹')}
           ${prevCell(c.spend, c.prev_spend, '₹')}</td>
@@ -1201,9 +1418,20 @@ function renderCampaigns(campaigns, avgCpl) {
         <td>${c.ctr}%</td>
         <td>${c.conversions} ${delta(c.conversions, c.prev_conversions, '')}
           ${prevCell(c.conversions, c.prev_conversions, '')}</td>
+        <td style="color:var(--teal)">${(()=>{const s=getSent(c.name);return s!==null?s+'<span style=\"font-size:0.62rem;color:var(--text4);margin-left:3px\">sclx</span>':'<span style=\"color:var(--text4)\">—</span>'})()}</td>
         <td>${cplPill(c.cpl)} ${delta(c.cpl, c.prev_cpl, '₹')}
           ${prevCell(c.cpl, c.prev_cpl, '₹')}</td>
-      </tr>`).join('')}
+      </tr>
+      <tr class="camp-expand-row" id="camp-expand-${ci}" style="display:none">
+        <td colspan="7">
+          <div class="bucket-funnel">
+            ${expandHtml}
+            ${enrollRate !== null ? `<div class="enroll-rate">SQL→Enrolled: ${enrollRate}%</div>` : ''}
+          </div>
+          ${campLog.length === 0 ? '<div style="color:var(--text4);font-size:0.7rem;margin-top:0.4rem">No ScaleX events matched for this campaign in current period</div>' : ''}
+        </td>
+      </tr>`;
+      }).join('')}
     </tbody>
     <tfoot>
       <tr style="border-top:2px solid var(--border2)">
@@ -1212,6 +1440,7 @@ function renderCampaigns(campaigns, avgCpl) {
         <td style="color:var(--text)">${campaigns.reduce((s,c)=>s+c.clicks,0).toLocaleString('en-IN')}</td>
         <td>—</td>
         <td style="color:var(--text)">${Math.round(campaigns.reduce((s,c)=>s+c.conversions,0)*10)/10}</td>
+        <td style="color:var(--teal);font-family:'IBM Plex Mono',monospace;font-size:0.75rem">${Object.values(sentMap).reduce((a,b)=>a+b,0)||'—'}</td>
         <td>${cplPill(avgCpl)}</td>
       </tr>
     </tfoot>
@@ -1497,6 +1726,65 @@ function renderRestatementChart() {
       });
     })
     .catch(err => console.warn('BatchLog fetch failed:', err));
+}
+
+// ── Smart Bidding Maturity ───────────────────────────────────
+function renderSmbTile(rows) {
+  const wrap = document.getElementById('smb-rows');
+  if (!wrap) return;
+
+  // 30-day window
+  const cutoff30 = new Date(Date.now() - 30 * 86400000);
+  const last30   = rows.filter(r => new Date(r.timestamp) >= cutoff30);
+
+  // _sclx action definitions
+  const SCLX_ACTIONS = [
+    { id:'lead_submitted', label:'lead_submitted_sclx',  threshold:30, value:'₹200' },
+    { id:'signup',         label:'signup_sclx',          threshold:30, value:'₹500' },
+    { id:'qualified',      label:'qualified_sclx',       threshold:30, value:'₹2,000' },
+    { id:'converted',      label:'converted_sclx',       threshold:30, value:'₹10,000' },
+    { id:'disqualified',   label:'disqualified_sclx',    threshold:30, value:'₹1' },
+  ];
+
+  // Count SUCCESS/EC_ONLY rows per action
+  const counts = {};
+  last30.filter(r => r.status === 'SUCCESS' || r.status === 'SUCCESS_EC_ONLY').forEach(r => {
+    const cid = (r.convId || r.conv_id || '').toLowerCase();
+    if      (cid.includes('disq'))    counts['disqualified']   = (counts['disqualified']||0)   + 1;
+    else if (cid.includes('convert')) counts['converted']      = (counts['converted']||0)      + 1;
+    else if (cid.includes('qual'))    counts['qualified']      = (counts['qualified']||0)      + 1;
+    else if (cid.includes('sign'))    counts['signup']         = (counts['signup']||0)         + 1;
+    else                              counts['lead_submitted'] = (counts['lead_submitted']||0) + 1;
+  });
+
+  const maxCount = Math.max(...SCLX_ACTIONS.map(a => counts[a.id]||0), 30);
+
+  wrap.innerHTML = SCLX_ACTIONS.map(a => {
+    const count     = counts[a.id] || 0;
+    const pct       = Math.min(Math.round((count / maxCount) * 100), 100);
+    const eligible  = count >= a.threshold;
+    const barColor  = eligible ? 'var(--green)' : count > 15 ? 'var(--amber)' : 'rgba(82,82,91,0.5)';
+    const badge     = eligible
+      ? `<span class="smb-badge eligible">✓ Eligible (${count}/${a.threshold})</span>`
+      : `<span class="smb-badge limited">⚠ Limited (${count}/${a.threshold})</span>`;
+    return `<div class="smb-row">
+      <div class="smb-action" title="${a.label}">${a.label}</div>
+      <div class="smb-bar-wrap"><div class="smb-bar" style="width:${pct}%;background:${barColor}"></div></div>
+      <div class="smb-count" style="color:${barColor}">${count}</div>
+      ${badge}
+      <div style="font-size:0.6rem;color:var(--text4);min-width:40px;text-align:right">${a.value}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Campaign row expand/collapse ─────────────────────────────
+function toggleCampRow(idx) {
+  const expandRow = document.getElementById('camp-expand-' + idx);
+  const campRows  = document.querySelectorAll('.camp-row');
+  if (!expandRow) return;
+  const isOpen = expandRow.style.display !== 'none';
+  expandRow.style.display = isOpen ? 'none' : 'table-row';
+  if (campRows[idx]) campRows[idx].classList.toggle('expanded', !isOpen);
 }
 
 // ── CSS var resolver for Chart.js (can't read CSS vars natively) ─
