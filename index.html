@@ -136,7 +136,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 /* Signal Flow Panel */
 .sf-panel-wrap{margin-bottom:1.25rem}
 .sf-panel-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem}
-.sf-row1{display:grid;grid-template-columns:1.6fr 24px 1.2fr 24px 1.4fr 1px 1fr;gap:0.5rem;align-items:start;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+.sf-row1{display:grid;grid-template-columns:1.5fr 24px 1.1fr 24px 1.3fr 1.1fr;gap:0.75rem;align-items:start;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
 .sf-zone{min-width:0}
 .sf-zone-label{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text4);margin-bottom:0.4rem}
 .sf-zone-src{color:var(--text4);font-size:0.55rem;margin-left:4px}
@@ -152,7 +152,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .sf-filter-sub{font-size:0.62rem;color:var(--text4);margin-top:0.4rem;line-height:1.7;padding-left:0.25rem;border-left:2px solid var(--border2)}
 .sf-donut-caption{font-size:0.62rem;color:var(--text4);text-align:center;margin-top:0.4rem;font-style:italic;line-height:1.4}
 .sf-feed-zone .feed-item{padding:0.4rem 0}
-.sf-feed-zone .feed-event{font-size:0.7rem}
+.sf-feed-zone .feed-event{font-size:0.7rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px}
 .sf-feed-zone .feed-meta{font-size:0.58rem}
 .sf-row2{padding-top:0.75rem}
 .sf-row2-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:0.75rem}
@@ -536,7 +536,7 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
           <!-- Zone D: Live Feed sidebar -->
           <div class="sf-zone sf-feed-zone" style="border-left:1px solid var(--border);padding-left:0.85rem">
             <div class="sf-zone-label">LIVE FEED <span class="sf-zone-src">sGTM</span><div class="live-dot" style="display:inline-block;margin-left:4px"></div></div>
-            <div id="feed-list" style="max-height:220px;overflow-y:auto"><div class="empty-state">Loading…</div></div>
+            <div id="feed-list" style="max-height:240px;overflow-y:auto;min-width:0"><div class="empty-state">Loading…</div></div>
           </div>
 
         </div>
