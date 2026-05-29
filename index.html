@@ -402,6 +402,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
           <span>Refresh</span>
         </button>
+        <button class="refresh-btn" onclick="signOut()" title="Sign out"
+          style="color:var(--text4);border-color:transparent">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          <span>Sign out</span>
+        </button>
       </div>
     </div>
 
@@ -2088,6 +2096,11 @@ function toggleTheme() {
 })();
 
 initCplChart(null, null); // renders with sample data until gads loads
+async function signOut() {
+  try { await fetch('/api/auth/logout', { method:'POST' }); } catch(_) {}
+  window.location.href = '/login.html';
+}
+
 loadData();
 setInterval(loadData, REFRESH_MS);
 </script>

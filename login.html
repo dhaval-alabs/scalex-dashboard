@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign in — ScaleX Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:      #EEF2F7;
+    --surface: #FFFFFF;
+    --border:  rgba(0,0,0,0.06);
+    --border2: rgba(0,0,0,0.12);
+    --text:    #0F1923;
+    --text2:   #374151;
+    --text3:   #6B7280;
+    --text4:   #9CA3AF;
+    --teal:    #0D9488;
+    --teal-lt: #F0FDFA;
+    --teal-dim:rgba(13,148,136,0.12);
+    --red:     #EF4444;
+    --font:    'IBM Plex Sans', sans-serif;
+    --mono:    'IBM Plex Mono', monospace;
+  }
+  @media(prefers-color-scheme:dark){:root{
+    --bg:#0A0A0C;--surface:#111113;--border:rgba(255,255,255,0.07);
+    --border2:rgba(255,255,255,0.12);--text:#F1F5F9;--text2:#CBD5E1;
+    --text3:#94A3B8;--text4:#64748B;--teal:#14B8A6;--teal-lt:rgba(20,184,166,0.1);
+    --teal-dim:rgba(20,184,166,0.12);
+  }}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    -webkit-font-smoothing:antialiased}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    padding:2.25rem 2rem;width:100%;max-width:380px;box-shadow:0 4px 24px rgba(0,0,0,0.06)}
+  .logo{display:flex;align-items:center;gap:0.6rem;margin-bottom:1.75rem}
+  .logo-mark{width:32px;height:32px;background:linear-gradient(135deg,#0D9488,#14B8A6);
+    border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .logo-mark svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2}
+  .logo-name{font-family:var(--mono);font-size:0.78rem;font-weight:500;
+    color:var(--text2);letter-spacing:0.04em}
+  h1{font-size:1.15rem;font-weight:700;color:var(--text);margin-bottom:0.35rem}
+  .subtitle{font-size:0.82rem;color:var(--text3);margin-bottom:1.75rem;line-height:1.5}
+  label{display:block;font-size:0.75rem;font-weight:600;color:var(--text2);
+    margin-bottom:0.4rem;letter-spacing:0.02em}
+  input{width:100%;padding:0.65rem 0.85rem;border:1.5px solid var(--border2);
+    border-radius:7px;background:var(--bg);color:var(--text);font-family:var(--font);
+    font-size:0.88rem;outline:none;transition:border-color 0.15s}
+  input:focus{border-color:var(--teal)}
+  input.otp-input{font-family:var(--mono);font-size:1.35rem;letter-spacing:0.35em;
+    text-align:center;padding:0.75rem}
+  .field{margin-bottom:1.1rem}
+  .btn{width:100%;padding:0.7rem;background:var(--teal);color:#fff;border:none;
+    border-radius:7px;font-family:var(--font);font-size:0.88rem;font-weight:600;
+    cursor:pointer;transition:opacity 0.15s;margin-top:0.25rem}
+  .btn:hover{opacity:0.88}
+  .btn:disabled{opacity:0.45;cursor:not-allowed}
+  .btn-ghost{background:transparent;color:var(--text3);border:1.5px solid var(--border2);
+    margin-top:0.6rem}
+  .btn-ghost:hover{border-color:var(--border);opacity:1;color:var(--text2)}
+  .error{font-size:0.78rem;color:var(--red);margin-top:0.5rem;display:none}
+  .error.show{display:block}
+  .hint{font-size:0.72rem;color:var(--text4);margin-top:0.5rem}
+  .step{display:none}
+  .step.active{display:block}
+  .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);
+    border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;
+    vertical-align:middle;margin-right:6px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .back-link{text-align:center;margin-top:1rem;font-size:0.75rem;color:var(--text4)}
+  .back-link a{color:var(--teal);cursor:pointer;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="10" height="10" rx="1.5"/>
+        <rect x="11" y="11" width="10" height="10" rx="1.5"/>
+        <line x1="10" y1="7" x2="20" y2="7"/><line x1="17" y1="3" x2="17" y2="13"/>
+      </svg>
+    </div>
+    <span class="logo-name">scaletrix.ai</span>
+  </div>
+
+  <!-- Step 1: Email -->
+  <div class="step active" id="step-email">
+    <h1>Sign in</h1>
+    <p class="subtitle">Enter your email to receive a one-time code.</p>
+    <div class="field">
+      <label for="email">Email address</label>
+      <input type="email" id="email" placeholder="you@analytixlabs.in" autocomplete="email">
+      <div class="error" id="email-error">—</div>
+    </div>
+    <button class="btn" id="btn-request" onclick="requestOtp()">Send code</button>
+  </div>
+
+  <!-- Step 2: OTP -->
+  <div class="step" id="step-otp">
+    <h1>Check your email</h1>
+    <p class="subtitle" id="otp-subtitle">We sent a 6-digit code to <strong></strong></p>
+    <div class="field">
+      <label for="otp">One-time code</label>
+      <input type="text" id="otp" class="otp-input" placeholder="••••••"
+        maxlength="6" inputmode="numeric" autocomplete="one-time-code"
+        oninput="this.value=this.value.replace(/\D/g,'')">
+      <div class="error" id="otp-error">—</div>
+      <div class="hint">Code expires in 10 minutes.</div>
+    </div>
+    <button class="btn" id="btn-verify" onclick="verifyOtp()">Verify</button>
+    <button class="btn btn-ghost" onclick="backToEmail()">Use a different email</button>
+    <div class="back-link"><a onclick="resendOtp()">Resend code</a></div>
+  </div>
+</div>
+
+<script>
+  let pendingToken = '';
+  let currentEmail = '';
+
+  async function requestOtp() {
+    const email = document.getElementById('email').value.trim();
+    const errEl = document.getElementById('email-error');
+    const btn   = document.getElementById('btn-request');
+    errEl.classList.remove('show');
+
+    if (!email || !email.includes('@')) {
+      showError('email-error', 'Please enter a valid email address.');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Sending…';
+
+    try {
+      const res  = await fetch('/api/auth/request-otp', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showError('email-error', data.error || 'Failed to send code. Please try again.');
+        btn.disabled = false;
+        btn.textContent = 'Send code';
+        return;
+      }
+
+      pendingToken  = data.pendingToken;
+      currentEmail  = email;
+      document.querySelector('#otp-subtitle strong').textContent = email;
+      document.getElementById('step-email').classList.remove('active');
+      document.getElementById('step-otp').classList.add('active');
+      setTimeout(() => document.getElementById('otp').focus(), 100);
+
+    } catch(e) {
+      showError('email-error', 'Network error. Please try again.');
+      btn.disabled = false;
+      btn.textContent = 'Send code';
+    }
+  }
+
+  async function verifyOtp() {
+    const otp   = document.getElementById('otp').value.trim();
+    const btn   = document.getElementById('btn-verify');
+    document.getElementById('otp-error').classList.remove('show');
+
+    if (otp.length !== 6) {
+      showError('otp-error', 'Please enter the 6-digit code.');
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>Verifying…';
+
+    try {
+      const res  = await fetch('/api/auth/verify-otp', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ otp, pendingToken })
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        showError('otp-error', data.error || 'Incorrect or expired code.');
+        btn.disabled = false;
+        btn.textContent = 'Verify';
+        return;
+      }
+
+      // Redirect to dashboard
+      window.location.href = data.redirect || '/';
+
+    } catch(e) {
+      showError('otp-error', 'Network error. Please try again.');
+      btn.disabled = false;
+      btn.textContent = 'Verify';
+    }
+  }
+
+  async function resendOtp() {
+    document.getElementById('otp').value = '';
+    document.getElementById('email').value = currentEmail;
+    document.getElementById('step-otp').classList.remove('active');
+    document.getElementById('step-email').classList.add('active');
+    await requestOtp();
+  }
+
+  function backToEmail() {
+    document.getElementById('step-otp').classList.remove('active');
+    document.getElementById('step-email').classList.add('active');
+    document.getElementById('otp').value = '';
+    document.getElementById('btn-request').disabled = false;
+    document.getElementById('btn-request').textContent = 'Send code';
+  }
+
+  function showError(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+
+  // Enter key support
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    if (document.getElementById('step-email').classList.contains('active')) requestOtp();
+    else verifyOtp();
+  });
+</script>
+</body>
+</html>
