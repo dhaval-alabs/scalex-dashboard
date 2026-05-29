@@ -137,14 +137,17 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 .sf-panel-wrap{margin-bottom:1.25rem}
 .sf-panel-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem}
 .sf-row1{display:grid;grid-template-columns:1.5fr 24px 1.1fr 24px 1.3fr 1.1fr;gap:0.75rem;align-items:start;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
-.sf-zone{min-width:0}
+.sf-zone{min-width:0;padding:0.6rem 0.75rem;border-radius:6px;background:var(--bg3);border:1px solid var(--border)}
 .sf-zone-label{font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text4);margin-bottom:0.4rem}
 .sf-zone-src{color:var(--text4);font-size:0.55rem;margin-left:4px}
 .sf-zone-big{font-family:'IBM Plex Mono',monospace;font-size:1.6rem;font-weight:700;color:var(--text);line-height:1}
 .sf-zone-sub{font-size:0.65rem;color:var(--text4);margin-top:0.15rem}
 .sf-arrow{display:flex;align-items:center;justify-content:center;color:var(--border2);padding-top:1.2rem}
 .sf-inbound .sf-zone-big{color:var(--blue)}
+.sf-inbound{border-left:2px solid var(--blue)!important}
 .sf-outbound .sf-zone-big{color:var(--teal)}
+.sf-outbound{border-left:2px solid var(--teal)!important}
+.sf-filter{border-left:2px solid var(--amber)!important}
 .sf-filter-rows{display:flex;flex-direction:column;gap:0.3rem;margin-top:0.4rem}
 .sf-filter-row{display:flex;justify-content:space-between;align-items:center;gap:0.5rem}
 .sf-filter-key{font-size:0.72rem;color:var(--text3)}
@@ -499,23 +502,41 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </div>
 
-          <!-- Zone B: ScaleX Filter -->
+          <!-- Zone B: ScaleX Filter — top-to-bottom funnel (Sumeet May 28 brief) -->
           <div class="sf-zone sf-filter">
             <div class="sf-zone-label">SCALEX <span class="sf-zone-src">filter</span></div>
-            <div class="sf-filter-rows" id="sf-filter-rows">
-              <div class="sf-filter-row">
-                <span class="sf-filter-key">PPC-only filter</span>
-                <span class="sf-filter-val" id="sf-ppc-pass">—</span>
+            <div style="display:flex;flex-direction:column;gap:0.35rem;margin-top:0.5rem;font-size:0.68rem">
+
+              <!-- Funnel step 1 -->
+              <div style="color:var(--text4);font-family:'IBM Plex Mono',monospace;font-size:0.6rem">Filter 1 · PPC source</div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="color:var(--text3)">✗ non-PPC dropped</span>
+                <span style="color:var(--coral);font-family:'IBM Plex Mono',monospace;font-weight:600" id="sf-nonppc-drop">—</span>
               </div>
-              <div class="sf-filter-row">
-                <span class="sf-filter-key">14 → 5 mapping</span>
-                <span class="sf-filter-val" style="color:var(--teal)">active</span>
+              <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px dashed var(--border2);padding-top:0.3rem">
+                <span style="color:var(--text2)">→ PPC passed</span>
+                <span style="color:var(--teal);font-family:'IBM Plex Mono',monospace;font-weight:600" id="sf-ppc-pass">—</span>
               </div>
-              <div class="sf-filter-row" style="margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid var(--border)">
-                <span class="sf-filter-key" style="color:var(--text4)">Filtered out</span>
-                <span class="sf-filter-val" id="sf-filtered-total" style="color:var(--text4)">—</span>
+
+              <!-- Funnel step 2 -->
+              <div style="color:var(--text4);font-family:'IBM Plex Mono',monospace;font-size:0.6rem;margin-top:0.35rem">Filter 2 · Active stage</div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="color:var(--text3)">✗ drop-stage filtered</span>
+                <span style="color:var(--coral);font-family:'IBM Plex Mono',monospace;font-weight:600" id="sf-dropstage-count">—</span>
               </div>
-              <div class="sf-filter-sub" id="sf-filter-breakdown"></div>
+
+              <!-- Mapping note -->
+              <div style="margin-top:0.4rem;padding:0.35rem 0.5rem;background:var(--teal-dim2);border-radius:4px;font-size:0.6rem;color:var(--text3);line-height:1.5">
+                14 CRM stages → 5 proxy-value buckets<br>
+                <span style="color:var(--teal)">₹200 · ₹500 · ₹2K · ₹10K · ₹1</span>
+              </div>
+
+              <!-- No-GCLID annotation (Sumeet's explicit ask) -->
+              <div style="margin-top:0.4rem;padding:0.35rem 0.5rem;background:rgba(167,139,250,0.07);border-left:2px solid var(--purple);border-radius:0 4px 4px 0;font-size:0.6rem;color:var(--text4);line-height:1.5">
+                ⓘ No-GCLID events are <strong style="color:var(--text3)">not dropped</strong> — they
+                pass through and rely on Google EC for match downstream
+                (<span id="sf-ec-only-pct" style="color:var(--purple);font-family:'IBM Plex Mono',monospace">—</span> of sent).
+              </div>
             </div>
           </div>
 
@@ -561,26 +582,23 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
 
     </div>
 
-      <!-- ── Reconciliation widget ── -->
-      <div class="chart-card recon-card">
-        <div class="chart-header">
+      <!-- ── Ops heartbeat strip ── -->
+      <!-- ── Smart Bidding Maturity tile ── -->
+      <div class="chart-card smb-tile" style="margin-bottom:1.25rem">
+        <div class="chart-header" style="margin-bottom:0.75rem">
           <div>
-            <div class="chart-title">Signal Reconciliation — Last 7 Days</div>
-            <div class="chart-sub">Every CRM event accounted for · status breakdown by day</div>
+            <div class="chart-title">Smart Bidding Maturity</div>
+            <div class="chart-sub">30-day conversion volume per <code style="font-size:0.7rem;background:var(--bg3);padding:1px 5px;border-radius:3px">_sclx</code> action · threshold: 30 / 30d for eligibility</div>
           </div>
-          <div style="display:flex;align-items:center;gap:0.75rem">
-            <span id="recon-total-badge" style="font-family:'IBM Plex Mono',monospace;font-size:0.68rem;padding:2px 8px;border-radius:3px;background:var(--teal-dim);color:var(--teal)">— events</span>
-            <div class="live-tag"><div class="live-dot"></div>live</div>
+          <div style="display:flex;gap:0.5rem;align-items:center">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.6rem;padding:2px 6px;border-radius:3px;border:1px solid var(--border2);color:var(--text4)">parallel run</span>
           </div>
         </div>
-        <div style="position:relative;height:130px;margin-bottom:0.75rem"><canvas id="reconChart"></canvas></div>
-        <div style="overflow-x:auto">
-          <table class="recon-table">
-            <thead><tr>
-              <th>Status</th><th>Meaning</th><th>7d total</th><th>% of all</th><th>Alert</th>
-            </tr></thead>
-            <tbody id="recon-tbody"><tr><td colspan="5" style="text-align:center;color:var(--text4);padding:1rem">Loading…</td></tr></tbody>
-          </table>
+        <div id="smb-rows" style="display:flex;flex-direction:column;gap:0.4rem">
+          <div class="empty-state" style="padding:0.5rem 0">Computing…</div>
+        </div>
+        <div style="margin-top:0.75rem;padding-top:0.6rem;border-top:1px solid var(--border);font-size:0.65rem;color:var(--text4);font-style:italic">
+          _sclx actions run in parallel with primary conversion actions. Once volume hits threshold, Smart Bidding can use them as bidding signals.
         </div>
       </div>
 
@@ -637,23 +655,26 @@ body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--tex
         </div>
       </div>
 
-      <!-- ── Ops heartbeat strip ── -->
-      <!-- ── Smart Bidding Maturity tile ── -->
-      <div class="chart-card smb-tile" style="margin-bottom:1.25rem">
-        <div class="chart-header" style="margin-bottom:0.75rem">
+      <!-- ── Reconciliation widget ── -->
+      <div class="chart-card recon-card">
+        <div class="chart-header">
           <div>
-            <div class="chart-title">Smart Bidding Maturity</div>
-            <div class="chart-sub">30-day conversion volume per <code style="font-size:0.7rem;background:var(--bg3);padding:1px 5px;border-radius:3px">_sclx</code> action · threshold: 30 / 30d for eligibility</div>
+            <div class="chart-title">Signal Reconciliation — Last 7 Days</div>
+            <div class="chart-sub">Every CRM event accounted for · status breakdown by day</div>
           </div>
-          <div style="display:flex;gap:0.5rem;align-items:center">
-            <span style="font-family:'IBM Plex Mono',monospace;font-size:0.6rem;padding:2px 6px;border-radius:3px;border:1px solid var(--border2);color:var(--text4)">parallel run</span>
+          <div style="display:flex;align-items:center;gap:0.75rem">
+            <span id="recon-total-badge" style="font-family:'IBM Plex Mono',monospace;font-size:0.68rem;padding:2px 8px;border-radius:3px;background:var(--teal-dim);color:var(--teal)">— events</span>
+            <div class="live-tag"><div class="live-dot"></div>live</div>
           </div>
         </div>
-        <div id="smb-rows" style="display:flex;flex-direction:column;gap:0.4rem">
-          <div class="empty-state" style="padding:0.5rem 0">Computing…</div>
-        </div>
-        <div style="margin-top:0.75rem;padding-top:0.6rem;border-top:1px solid var(--border);font-size:0.65rem;color:var(--text4);font-style:italic">
-          _sclx actions run in parallel with primary conversion actions. Once volume hits threshold, Smart Bidding can use them as bidding signals.
+        <div style="position:relative;height:130px;margin-bottom:0.75rem"><canvas id="reconChart"></canvas></div>
+        <div style="overflow-x:auto">
+          <table class="recon-table">
+            <thead><tr>
+              <th>Status</th><th>Meaning</th><th>7d total</th><th>% of all</th><th>Alert</th>
+            </tr></thead>
+            <tbody id="recon-tbody"><tr><td colspan="5" style="text-align:center;color:var(--text4);padding:1rem">Loading…</td></tr></tbody>
+          </table>
         </div>
       </div>
 
@@ -837,22 +858,33 @@ function handleDateDropdown(sel) {
   }
   document.getElementById('date-picker-wrap').classList.remove('open');
   activeDays = val;
-  renderAll();
+  // Show immediate visual feedback before render
+  const lu = document.getElementById('last-updated');
+  if (lu) lu.textContent = 'Applying date filter…';
+  requestAnimationFrame(() => {
+    renderAll();
+    if (lu) {
+      const now = new Date();
+      lu.textContent = 'Updated ' + now.toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'});
+    }
+  });
 }
 
 // ── Status metadata ───────────────────────────────────────────
+// Status display order: deliveries first → failures → intentional skips
+// Matches Sumeet's narrative-flow spec (May 28 brief)
 const STATUS_META = {
-  'SUCCESS':              { label:'SUCCESS',              color:'#00D4AA', meaning:'Uploaded · GCLID match',             alert:'ok' },
-  'SUCCESS_EC_ONLY':      { label:'SUCCESS_EC_ONLY',      color:'#4C9FFF', meaning:'Uploaded · EC match (no GCLID)',      alert:'ok' },
-  'SKIP_NON_PPC':         { label:'SKIP_NON_PPC',         color:'#52525B', meaning:'Filtered · non-Google source',        alert:'ok' },
-  'SKIP_DROP_STAGE':      { label:'SKIP_DROP_STAGE',      color:'#3F3F46', meaning:'Filtered · inactive stage',           alert:'ok' },
-  'ADJUSTMENT_QUEUED':    { label:'ADJUSTMENT_QUEUED',    color:'#A78BFA', meaning:'Disqualified · restatement queued',   alert:'ok' },
-  'ADJUSTMENT_SKIPPED':   { label:'ADJUSTMENT_SKIPPED',   color:'#6D28D9', meaning:'Disqualified · no prior history',     alert:'ok' },
-  'SKIP_UNKNOWN_STAGE':   { label:'SKIP_UNKNOWN_STAGE',   color:'#FBBF24', meaning:'⚠ Unknown stage — add to STAGE_MAP', alert:'warn' },
-  'NO_GCLID':             { label:'NO_GCLID',             color:'#FB923C', meaning:'No GCLID + no EC identifiers',        alert:'warn' },
-  'GADS_PARTIAL_FAIL':    { label:'GADS_PARTIAL_FAIL',    color:'#F97316', meaning:'Google Ads rejected at upload',       alert:'warn' },
-  'FIRESTORE_FAIL':       { label:'FIRESTORE_FAIL',       color:'#EF4444', meaning:'🚨 Ledger write failed',              alert:'crit' },
-  'PARSE_ERROR':          { label:'PARSE_ERROR',          color:'#DC2626', meaning:'🚨 Malformed webhook payload',        alert:'crit' },
+  'SUCCESS':              { label:'SUCCESS',              color:'#00D4AA', meaning:'Uploaded · GCLID match',             alert:'ok',   order:1 },
+  'SUCCESS_EC_ONLY':      { label:'SUCCESS_EC_ONLY',      color:'#4C9FFF', meaning:'Uploaded · EC match (no GCLID)',      alert:'ok',   order:2 },
+  'GADS_PARTIAL_FAIL':    { label:'GADS_PARTIAL_FAIL',    color:'#F97316', meaning:'Google Ads rejected at upload',       alert:'warn', order:3 },
+  'SKIP_DROP_STAGE':      { label:'SKIP_DROP_STAGE',      color:'#3F3F46', meaning:'Filtered · inactive stage',           alert:'ok',   order:4 },
+  'SKIP_NON_PPC':         { label:'SKIP_NON_PPC',         color:'#52525B', meaning:'Filtered · non-Google source',        alert:'ok',   order:5 },
+  'ADJUSTMENT_QUEUED':    { label:'ADJUSTMENT_QUEUED',    color:'#A78BFA', meaning:'Disqualified · restatement queued',   alert:'ok',   order:6 },
+  'ADJUSTMENT_SKIPPED':   { label:'ADJUSTMENT_SKIPPED',   color:'#6D28D9', meaning:'Disqualified · no prior history',     alert:'ok',   order:7 },
+  'SKIP_UNKNOWN_STAGE':   { label:'SKIP_UNKNOWN_STAGE',   color:'#FBBF24', meaning:'⚠ Unknown stage — add to STAGE_MAP', alert:'warn', order:8 },
+  'NO_GCLID':             { label:'NO_GCLID',             color:'#FB923C', meaning:'No GCLID + no EC identifiers',        alert:'warn', order:9 },
+  'FIRESTORE_FAIL':       { label:'FIRESTORE_FAIL',       color:'#EF4444', meaning:'🚨 Ledger write failed',              alert:'crit', order:10 },
+  'PARSE_ERROR':          { label:'PARSE_ERROR',          color:'#DC2626', meaning:'🚨 Malformed webhook payload',        alert:'crit', order:11 },
 };
 
 let reconChartInstance = null;
@@ -939,14 +971,11 @@ function renderReconciliation(rows) {
   if (!tbody) return;
   if (!total) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text4);padding:1rem">No events in last 7 days</td></tr>'; return; }
 
-  // Sort: critical first, then warn, then ok — within each group by count desc
+  // Sort: narrative flow — deliveries → failure → intentional skips
   const sortedStatuses = Object.entries(counts).sort((a, b) => {
-    const metaA = STATUS_META[a[0]] || { alert: 'warn' };
-    const metaB = STATUS_META[b[0]] || { alert: 'warn' };
-    const order  = { crit: 0, warn: 1, ok: 2 };
-    const oa = order[metaA.alert] ?? 1;
-    const ob = order[metaB.alert] ?? 1;
-    return oa !== ob ? oa - ob : b[1] - a[1];
+    const ao = STATUS_META[a[0]]?.order ?? 999;
+    const bo = STATUS_META[b[0]]?.order ?? 999;
+    return ao !== bo ? ao - bo : b[1] - a[1];
   });
 
   tbody.innerHTML = sortedStatuses.map(([status, count]) => {
@@ -975,7 +1004,7 @@ function renderAll() {
   renderKPIs(rows);
   renderSignalFlow(rows);
   renderFeed(allRows);
-  renderECTrend(allRows);
+  renderECTrend(rows);
   renderReconciliation(allRows);  // always last 7 days regardless of date picker
   renderSmbTile(allRows);         // always last 30 days regardless of date picker
   renderOpsStrip(allRows);
@@ -1089,16 +1118,19 @@ function renderSignalFlow(rows) {
   const dropStage  = rows.filter(r => r.status === 'SKIP_UNKNOWN_STAGE' || (r.newStage && DROP_STAGES.has(r.newStage))).length;
   const filteredTotal = rows.length - ppcPass;
 
+  // Populate funnel filter elements (new top-to-bottom funnel design)
   const ppcPassEl = document.getElementById('sf-ppc-pass');
-  if (ppcPassEl) ppcPassEl.textContent = ppcPass.toLocaleString('en-IN') + ' passed';
-  const filtEl = document.getElementById('sf-filtered-total');
-  if (filtEl) filtEl.textContent = (filteredTotal > 0 ? filteredTotal : rows.length - ppcPass).toLocaleString('en-IN');
-  const breakdown = document.getElementById('sf-filter-breakdown');
-  if (breakdown) {
-    breakdown.innerHTML = `
-      non-PPC source: ${skipNonPpc}<br>
-      no GCLID: ${noGclid}<br>
-      drop stages: ${dropStage}`;
+  if (ppcPassEl) ppcPassEl.textContent = ppcPass.toLocaleString('en-IN');
+  const nonPpcEl = document.getElementById('sf-nonppc-drop');
+  if (nonPpcEl) nonPpcEl.textContent = '−' + skipNonPpc.toLocaleString('en-IN');
+  const dropStageEl = document.getElementById('sf-dropstage-count');
+  if (dropStageEl) dropStageEl.textContent = '−' + dropStage.toLocaleString('en-IN');
+
+  // No-GCLID annotation: % of outbound that relied on EC
+  const ecOnly = rows.filter(r => r.status === 'SUCCESS_EC_ONLY').length;
+  const ecPctEl = document.getElementById('sf-ec-only-pct');
+  if (ecPctEl && ppcPass > 0) {
+    ecPctEl.textContent = Math.round((ecOnly / ppcPass) * 100) + '% (' + ecOnly + ' of ' + ppcPass + ')';
   }
 
   // ── Outbound donut (value-encoded) ──────────────────────────
@@ -1111,12 +1143,14 @@ function renderSignalFlow(rows) {
     'lead_submitted':'New Lead','signup':'Sign-up','qualified':'Qualified',
     'converted':'Converted','disqualified':'Disqualified'
   };
+  // Value-tier color encoding per Sumeet May 28 brief:
+  // light teal → bright teal → brand primary → deep navy → light grey
   const bucketColors = {
-    'New Lead':    'rgba(0,212,170,0.35)',
-    'Sign-up':     'rgba(0,212,170,0.6)',
-    'Qualified':   '#00D4AA',
-    'Converted':   '#003368',
-    'Disqualified':'#52525B'
+    'New Lead':    '#99F6E4',   // light teal  (₹200)
+    'Sign-up':     '#2DD4BF',   // bright teal (₹500)
+    'Qualified':   '#1BA87E',   // brand primary (₹2,000)
+    'Converted':   '#0F4C75',   // deep navy   (₹10,000)
+    'Disqualified':'#D1D5DB'    // light grey  (₹1 — muted, not competing)
   };
   const bucketCounts = { 'New Lead':0,'Sign-up':0,'Qualified':0,'Converted':0,'Disqualified':0 };
   rows.filter(r => r.status==='SUCCESS'||r.status==='SUCCESS_EC_ONLY').forEach(r => {
@@ -1746,13 +1780,13 @@ function renderSmbTile(rows) {
   const cutoff30 = new Date(Date.now() - 30 * 86400000);
   const last30   = rows.filter(r => new Date(r.timestamp) >= cutoff30);
 
-  // _sclx action definitions
+  // _sclx action definitions — funnel name primary, technical name muted (Sumeet May 28 brief)
   const SCLX_ACTIONS = [
-    { id:'lead_submitted', label:'lead_submitted_sclx',  threshold:30, value:'₹200' },
-    { id:'signup',         label:'signup_sclx',          threshold:30, value:'₹500' },
-    { id:'qualified',      label:'qualified_sclx',       threshold:30, value:'₹2,000' },
-    { id:'converted',      label:'converted_sclx',       threshold:30, value:'₹10,000' },
-    { id:'disqualified',   label:'disqualified_sclx',    threshold:30, value:'₹1' },
+    { id:'lead_submitted', label:'New Lead',     tech:'lead_submitted_sclx', color:'#00D4AA', threshold:30, value:'₹200' },
+    { id:'signup',         label:'MQL',          tech:'signup_sclx',          color:'#4C9FFF', threshold:30, value:'₹500' },
+    { id:'qualified',      label:'SQL',          tech:'qualified_sclx',        color:'#A78BFA', threshold:30, value:'₹2,000' },
+    { id:'converted',      label:'Converted',    tech:'converted_sclx',        color:'#34D399', threshold:10, value:'₹10,000' },
+    { id:'disqualified',   label:'Disqualified', tech:'disqualified_sclx',     color:'#71717A', threshold:null, value:'₹1' },
   ];
 
   // Count SUCCESS/EC_ONLY rows per action
@@ -1777,7 +1811,10 @@ function renderSmbTile(rows) {
       ? `<span class="smb-badge eligible">✓ Eligible (${count}/${a.threshold})</span>`
       : `<span class="smb-badge limited">⚠ Limited (${count}/${a.threshold})</span>`;
     return `<div class="smb-row">
-      <div class="smb-action" title="${a.label}">${a.label}</div>
+      <div class="smb-action" title="${a.tech}">
+        <span style="font-weight:600;color:var(--text)">${a.label}</span>
+        <span style="font-size:0.6rem;color:var(--text4);margin-left:0.35rem">(${a.tech})</span>
+      </div>
       <div class="smb-bar-wrap"><div class="smb-bar" style="width:${pct}%;background:${barColor}"></div></div>
       <div class="smb-count" style="color:${barColor}">${count}</div>
       ${badge}
