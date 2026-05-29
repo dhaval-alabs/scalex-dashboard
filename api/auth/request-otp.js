@@ -44,7 +44,7 @@ export default async function handler(req, res) {
       subject: `Your ScaleX sign-in code: ${otp}`,
       html: `
         <div style="font-family:'IBM Plex Sans',sans-serif;max-width:400px;margin:0 auto;padding:2rem">
-          <p style="font-size:0.85rem;color:#6B7280;margin-bottom:1rem">ScaleX Intelligence Dashboard</p>
+          <img src="https://scaletrix.ai/wp-content/uploads/2025/04/logo-3.webp" alt="Scaletrix.AI" style="height:24px;width:auto;display:block;margin-bottom:1rem">
           <h2 style="font-size:1.5rem;font-weight:700;color:#0F1923;margin-bottom:0.5rem">Your sign-in code</h2>
           <p style="color:#374151;margin-bottom:1.5rem">Use this code to sign in. It expires in 10 minutes.</p>
           <div style="font-family:'IBM Plex Mono',monospace;font-size:2rem;font-weight:700;
