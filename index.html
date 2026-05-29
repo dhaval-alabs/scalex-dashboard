@@ -539,14 +539,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
                 <span style="color:var(--text3)">✗ drop-stage filtered</span>
                 <span style="color:var(--coral);font-family:'IBM Plex Mono',monospace;font-weight:600" id="sf-dropstage-count">—</span>
               </div>
-              <!-- Gap row: shown only when unaccounted events > 5 -->
-              <div id="sf-gap-row" style="display:none;margin-top:0.25rem">
-                <div style="color:var(--text4);font-family:'IBM Plex Mono',monospace;font-size:0.6rem">Other / deduped</div>
-                <div style="display:flex;justify-content:space-between;align-items:center">
-                  <span style="color:var(--text4)">restatements · dedup · partial fails</span>
-                  <span style="color:var(--text4);font-family:'IBM Plex Mono',monospace;font-weight:600" id="sf-gap-count">—</span>
-                </div>
-              </div>
+              <!-- Gap row — populated dynamically by renderSignalFlow() -->
+              <div id="sf-gap-row" style="display:none;margin-top:0.25rem"></div>
 
               <div style="margin-top:0.4rem;padding:0.35rem 0.5rem;background:var(--teal-lt);border-radius:4px;font-size:0.6rem;color:var(--text3);line-height:1.5">
                 14 CRM stages → 5 proxy-value buckets<br>
@@ -1149,12 +1143,37 @@ function renderSignalFlow(rows) {
   if (dropStageEl) dropStageEl.textContent = '−' + dropStage.toLocaleString('en-IN');
 
   // Show gap row if non-trivial (> 5 events) — labelled "other / deduped"
+  // Build per-status breakdown for gap rows
+  const gapStatuses = [
+    { status:'GADS_PARTIAL_FAIL', label:'Upload rejected',      color:'var(--amber)', icon:'⚠' },
+    { status:'ADJUSTMENT_QUEUED', label:'Restatement queued',   color:'var(--purple)', icon:'✓' },
+    { status:'ADJUSTMENT_SKIPPED',label:'No prior conv',        color:'var(--text4)',  icon:'✓' },
+    { status:'NO_GCLID',          label:'No GCLID + no EC',     color:'var(--coral)',  icon:'⚠' },
+  ];
+  // Count gap-status rows that survived both filters
+  const ppcStatuses = new Set(['SUCCESS','SUCCESS_EC_ONLY','SKIP_NON_PPC','SKIP_DROP_STAGE',
+    'SKIP_UNKNOWN_STAGE','ADJUSTMENT_QUEUED','ADJUSTMENT_SKIPPED','GADS_PARTIAL_FAIL','NO_GCLID']);
+  const gapCounts = {};
+  gapStatuses.forEach(g => {
+    gapCounts[g.status] = rows.filter(r => r.status === g.status &&
+      r.status !== 'SKIP_NON_PPC' &&
+      !(r.newStage && DROP_STAGES.has(r.newStage))).length;
+  });
+
   const sfGapEl = document.getElementById('sf-gap-row');
-  const sfGapCount = document.getElementById('sf-gap-count');
-  if (sfGapEl && sfGapCount) {
+  const sfGapBreakdown = document.getElementById('sf-gap-breakdown');
+  if (sfGapEl) {
     if (gapRows > 5) {
       sfGapEl.style.display = '';
-      sfGapCount.textContent = '−' + gapRows.toLocaleString('en-IN');
+      if (sfGapBreakdown) {
+        sfGapBreakdown.innerHTML = gapStatuses
+          .filter(g => gapCounts[g.status] > 0)
+          .map(g => `<div style="display:flex;justify-content:space-between;align-items:center;gap:4px">
+            <span style="color:${g.color};font-size:0.58rem">${g.icon}</span>
+            <span style="color:var(--text4);font-size:0.6rem;flex:1">${g.label}</span>
+            <span style="color:${g.color};font-family:'IBM Plex Mono',monospace;font-size:0.65rem;font-weight:600">−${gapCounts[g.status].toLocaleString('en-IN')}</span>
+          </div>`).join('');
+      }
     } else {
       sfGapEl.style.display = 'none';
     }
