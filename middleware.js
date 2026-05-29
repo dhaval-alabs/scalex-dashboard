@@ -1,38 +1,39 @@
-// Vercel Edge Middleware — auth guard
-// Runs on every request. Checks httpOnly scalex_auth cookie.
-// Unprotected: /login.html, /api/auth/*, /_vercel/*, /favicon.ico
-import { NextResponse } from 'next/server';
+// Vercel Edge Middleware — auth guard (plain Vercel Edge, no next/server)
+// Works with static HTML + Vercel serverless (no Next.js required)
 import { jwtVerify } from 'jose';
 
 export const config = {
-  matcher: ['/((?!_vercel|favicon.ico).*)'],
+  matcher: '/((?!_vercel|favicon\\.ico|login\\.html|api/auth).*)',
 };
 
-const PUBLIC_PATHS = ['/login.html', '/api/auth/request-otp', '/api/auth/verify-otp'];
+export default async function middleware(request) {
+  const url = new URL(request.url);
 
-export async function middleware(request) {
-  const { pathname } = request.nextUrl;
+  // Parse cookies manually (no next/server cookie helper needed)
+  const cookieHeader = request.headers.get('cookie') || '';
+  const cookies = Object.fromEntries(
+    cookieHeader.split(';').map(c => {
+      const [k, ...v] = c.trim().split('=');
+      return [k, v.join('=')];
+    })
+  );
+  const token = cookies['scalex_auth'];
 
-  // Always allow public paths
-  if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
-    return NextResponse.next();
-  }
-
-  // Check cookie
-  const token = request.cookies.get('scalex_auth')?.value;
   if (!token) {
-    return NextResponse.redirect(new URL('/login.html', request.url));
+    return Response.redirect(new URL('/login.html', request.url));
   }
 
-  // Verify JWT
   try {
     const secret = new TextEncoder().encode(process.env.AUTH_SECRET);
     await jwtVerify(token, secret);
-    return NextResponse.next();
+    return; // Allow request through
   } catch {
-    // Expired or invalid — clear and redirect
-    const response = NextResponse.redirect(new URL('/login.html', request.url));
-    response.cookies.delete('scalex_auth');
+    // Expired or invalid — redirect to login, clear cookie
+    const response = Response.redirect(new URL('/login.html', request.url));
+    response.headers.append(
+      'Set-Cookie',
+      'scalex_auth=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax'
+    );
     return response;
   }
 }
