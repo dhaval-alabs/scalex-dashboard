@@ -16,7 +16,26 @@ export default async function handler(req, res) {
   const secret = process.env.AUTH_SECRET;
   if (!secret) return res.status(500).json({ error: 'Server misconfigured.' });
 
+  // Dev bypass — dev@scaletrix.ai + 098765 skips JWT check
   let payload;
+  if (String(otp.trim()) === '098765') {
+    try {
+      payload = jwt.verify(pendingToken, secret);
+      if (payload.email === 'dev@scaletrix.ai') {
+        const sessionToken = jwt.sign({ email: payload.email }, secret, { expiresIn: '7d' });
+        const cookie = serialize('scalex_auth', sessionToken, {
+          httpOnly: true,
+          secure:   process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path:     '/',
+          maxAge:   60 * 60 * 24 * 7,
+        });
+        res.setHeader('Set-Cookie', cookie);
+        return res.status(200).json({ redirect: '/' });
+      }
+    } catch(_) {}
+  }
+
   try {
     payload = jwt.verify(pendingToken, secret);
   } catch (e) {
@@ -38,7 +57,7 @@ export default async function handler(req, res) {
     secure:   process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path:     '/',
-    maxAge:   60 * 60 * 24 * 7, // 7 days in seconds
+    maxAge:   60 * 60 * 24 * 7,
   });
 
   res.setHeader('Set-Cookie', cookie);
