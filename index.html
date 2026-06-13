@@ -407,7 +407,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
       </div>
     </div>
 
-    <div class="content">
+    <div class="content" id="main-content">
       <div class="lift-hook" id="lift-hook">
         <div class="lift-stat" id="lh-cpl">
           <div class="lift-val" id="lh-cpl-val">₹599 → ₹468</div>
@@ -2103,7 +2103,7 @@ setInterval(loadData, REFRESH_MS);
 let currentPanel = 'dashboard';
 
 function showPanel(name) {
-  const contentEl = document.querySelector('.content');
+  const contentEl = document.getElementById('main-content');
   const containerEl = document.getElementById('panel-container');
 
   if (name === 'dashboard') {
@@ -2117,7 +2117,7 @@ function showPanel(name) {
       fetch('/panels/' + name + '.html')
         .then(r => r.text())
         .then(html => { containerEl.innerHTML = html; })
-        .catch(e => { containerEl.innerHTML = '<div style="color:var(--coral);padding:2rem">Failed to load: ' + e.message + '</div>'; });
+        .catch(e => { containerEl.innerHTML = '<div style="color:var(--coral);padding:2rem">Failed to load: ' + e.message + '</div>'; console.error('Panel load error:', e); });
     }
   }
 
@@ -2139,6 +2139,7 @@ async function callReconMCP(toolName, args) {
     body: JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/call',params:{name:toolName,arguments:args}})
   });
   const data = await res.json();
+  if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + await res.text().then(t=>t.slice(0,100)));
   if (data.error) throw new Error(data.error.message);
   return JSON.parse(data.result.content[0].text);
 }
