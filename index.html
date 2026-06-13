@@ -2107,23 +2107,20 @@ function showPanel(name) {
   const containerEl = document.getElementById('panel-container');
 
   if (name === 'dashboard') {
-    // Show dashboard, hide panel container
-    if (contentEl) contentEl.style.display = '';
+    if (contentEl) { contentEl.style.display = 'flex'; contentEl.style.flexDirection = 'column'; contentEl.style.flex = '1'; }
     if (containerEl) { containerEl.style.display = 'none'; containerEl.innerHTML = ''; }
   } else {
-    // Hide dashboard, load panel into container
-    if (contentEl) contentEl.style.display = 'none';
+    if (contentEl) { contentEl.style.display = 'none'; contentEl.style.flex = '0'; }
     if (containerEl) {
-      containerEl.style.display = 'block';
+      containerEl.style.cssText = 'display:block;flex:1;padding:1.5rem 2rem;overflow-y:auto';
       containerEl.innerHTML = '<div style="color:var(--text4);font-size:0.82rem;padding:2rem">Loading…</div>';
       fetch('/panels/' + name + '.html')
         .then(r => r.text())
         .then(html => { containerEl.innerHTML = html; })
-        .catch(() => { containerEl.innerHTML = '<div style="color:var(--coral);padding:2rem">Failed to load panel</div>'; });
+        .catch(e => { containerEl.innerHTML = '<div style="color:var(--coral);padding:2rem">Failed to load: ' + e.message + '</div>'; });
     }
   }
 
-  // Update nav active state
   document.querySelectorAll('.nav-item').forEach(item => {
     item.classList.remove('active');
     if (item.getAttribute('onclick') === "showPanel('" + name + "')") item.classList.add('active');
