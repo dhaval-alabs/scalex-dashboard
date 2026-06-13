@@ -2163,31 +2163,28 @@ setInterval(loadData, REFRESH_MS);
 // ── Panel switching ───────────────────────────────────────────
 const DASHBOARD_SECTIONS = [];
 function showPanel(name) {
-  // Get all direct children of content that are NOT panel overlays
-  const content = document.querySelector('.content');
-  if (!content) return;
-
+  const OVERLAYS = ['panel-workbench','panel-livefeed','panel-funnel','panel-campaigns','panel-pixel'];
   const isDashboard = name === 'dashboard';
 
-  // Hide/show all overlay panels
-  ['workbench','livefeed','funnel','campaigns','pixel'].forEach(id => {
-    const el = document.getElementById('panel-' + id);
-    if (el) el.style.display = (id === name) ? '' : 'none';
+  // Show/hide overlay panels
+  OVERLAYS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = (id === 'panel-' + name) ? 'block' : 'none';
   });
 
-  // Hide/show the main dashboard content (everything except panel overlays)
-  Array.from(content.children).forEach(child => {
-    const id = child.id || '';
-    const isOverlay = ['panel-workbench','panel-livefeed','panel-funnel','panel-campaigns','panel-pixel'].includes(id);
-    if (!isOverlay) child.style.display = isDashboard ? '' : 'none';
-  });
+  // Show/hide all dashboard content children
+  const contentEl = document.querySelector('.content');
+  if (contentEl) {
+    Array.from(contentEl.children).forEach(child => {
+      if (OVERLAYS.includes(child.id)) return; // skip overlays — handled above
+      child.style.display = isDashboard ? '' : 'none';
+    });
+  }
 
   // Update nav active state
   document.querySelectorAll('.nav-item').forEach(item => {
     item.classList.remove('active');
-    if (item.getAttribute('onclick') === "showPanel('" + name + "')") {
-      item.classList.add('active');
-    }
+    if (item.getAttribute('onclick') === "showPanel('" + name + "')") item.classList.add('active');
   });
   closeSidebar();
 }
