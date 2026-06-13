@@ -2109,14 +2109,17 @@ function showPanel(name) {
   const containerEl = document.getElementById('panel-container');
 
   if (name === 'dashboard') {
-    if (contentEl) contentEl.classList.remove('hidden');
-    if (containerEl) { containerEl.classList.remove('active'); containerEl.innerHTML = ''; }
+    if (contentEl) contentEl.style.removeProperty('display');
+    if (containerEl) { containerEl.style.setProperty('display','none','important'); containerEl.innerHTML = ''; }
   } else {
-    if (contentEl) contentEl.classList.add('hidden');
+    if (contentEl) contentEl.style.setProperty('display','none','important');
     if (containerEl) {
-      containerEl.classList.add('active');
+      containerEl.style.setProperty('display','block','important');
+      containerEl.style.padding = '1.5rem 2rem';
+      containerEl.style.flex = '1';
+      containerEl.style.overflowY = 'auto';
       containerEl.innerHTML = '<div style="color:var(--text4);font-size:0.82rem;padding:2rem">Loading…</div>';
-      fetch('/panels/' + name + '.html?v=2')
+      fetch('/panels/' + name + '.html?v=3')
         .then(r => r.text())
         .then(html => { containerEl.innerHTML = html; })
         .catch(e => { containerEl.innerHTML = '<div style="color:var(--coral);padding:2rem">Error: ' + e.message + '</div>'; });
