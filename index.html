@@ -2140,8 +2140,8 @@ async function callReconMCP(toolName, args) {
     method: 'POST', headers: {'Content-Type':'application/json'},
     body: JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/call',params:{name:toolName,arguments:args}})
   });
+  if (!res.ok) throw new Error('MCP HTTP ' + res.status);
   const data = await res.json();
-  if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + await res.text().then(t=>t.slice(0,100)));
   if (data.error) throw new Error(data.error.message);
   return JSON.parse(data.result.content[0].text);
 }
