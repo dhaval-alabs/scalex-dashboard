@@ -14,6 +14,14 @@ export default async function handler(req, res) {
 
   const normalised = email.trim().toLowerCase();
 
+  // Dev bypass — skip allowlist + Resend for dev account
+  if (normalised === 'dev@scaletrix.ai') {
+    const secret = process.env.AUTH_SECRET;
+    if (!secret) return res.status(500).json({ error: 'Server misconfigured (AUTH_SECRET missing).' });
+    const pendingToken = jwt.sign({ email: normalised, otp: '098765' }, secret, { expiresIn: '10m' });
+    return res.status(200).json({ pendingToken });
+  }
+
   // Check against allowlist
   const allowed = (process.env.ALLOWED_EMAILS || '')
     .split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
