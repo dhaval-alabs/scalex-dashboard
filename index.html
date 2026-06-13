@@ -2045,24 +2045,6 @@ async function loadData() {
     } else {
       console.warn('Google Ads fetch failed:', gads.reason);
       
-// ── Panel switching ──────────────────────────────────────────
-function showPanel(name) {
-  // Hide all panels
-  document.querySelectorAll('.panel-section').forEach(p => p.style.display = 'none');
-  // Show target panel
-  const target = document.getElementById('panel-' + name);
-  if (target) target.style.display = '';
-  // Update nav active state
-  document.querySelectorAll('.nav-item').forEach(item => {
-    item.classList.remove('active');
-    if (item.getAttribute('onclick') === "showPanel('" + name + "')") {
-      item.classList.add('active');
-    }
-  });
-  // Close mobile sidebar
-  closeSidebar();
-}
-
 // ── Workbench MCP tools ──────────────────────────────────────
 const RECON_MCP_URL = 'https://scalex-recon-mcp.vercel.app/api/mcp';
 
