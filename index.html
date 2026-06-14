@@ -310,6 +310,45 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
 .section-label{display:flex;align-items:center;gap:0.75rem;margin:1.75rem 0 1rem}
 .section-label span{font-size:0.62rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--text4);white-space:nowrap}
 .section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+/* ── Date range UX ─────────────────────────────────────────── */
+.date-label {
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: 0.65rem;
+  color: var(--text4);
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+  transition: opacity 0.2s;
+}
+.date-label.fixed {
+  color: var(--text4);
+  opacity: 0.6;
+}
+.chart-card.loading-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.chart-card.loading-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.03) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 0.8s ease-in-out;
+  pointer-events: none;
+  border-radius: inherit;
+}
+@keyframes shimmer {
+  0%   { background-position: -200% 0; opacity: 1; }
+  100% { background-position: 200% 0; opacity: 0; }
+}
+.kpi-grid.loading-shimmer > * {
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+.kpi-grid.loading-shimmer::after {
+  display: none;
+}
+
 </style>
 </head>
 <body>
@@ -437,18 +476,19 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
         </div>
       </div>
 
-      <div class="chart-card" style="margin-bottom:1.25rem">
+      <div class="chart-card" id="card-ec" style="margin-bottom:1.25rem">
         <div class="chart-header">
           <div>
             <div class="chart-title">EC Recovery — Daily</div>
             <div class="chart-sub">% of conversions recovered via Enhanced Conversions (no GCLID, matched email/phone)</div>
+            <div class="date-label" id="dl-ec"></div>
           </div>
           <div class="live-tag"><div class="live-dot"></div>live</div>
         </div>
         <div style="position:relative;height:140px"><canvas id="ecTrendChart"></canvas></div>
       </div>
 
-      <div class="kpi-grid">
+      <div class="kpi-grid" id="card-kpis">
         <div class="kpi teal">
           <div class="kpi-label">Total Conversions</div>
           <div class="kpi-value" id="kpi-leads">—</div>
@@ -482,11 +522,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
       </div>
 
       <div class="charts-grid">
-        <div class="chart-card">
+        <div class="chart-card" id="card-cpl">
           <div class="chart-header">
             <div>
               <div class="chart-title">CPL Trend — Weekly</div>
               <div class="chart-sub">Before/after ScaleX server-side activation (W6)</div>
+              <div class="date-label" id="dl-cpl"></div>
             </div>
             <div class="chart-badge">₹/lead</div>
           </div>
@@ -660,7 +701,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
       </div>
 
       <!-- Campaign breakdown — live from Google Ads -->
-      <div class="chart-card" style="margin-bottom:1.25rem">
+      <div class="chart-card" id="card-campaigns" style="margin-bottom:1.25rem">
         <div class="chart-header">
           <div>
             <div class="chart-title">All Campaigns — Performance Breakdown</div>
@@ -674,10 +715,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:
       </div>
 
       <!-- ── Reconciliation widget ── -->
-      <div class="chart-card recon-card">
+      <div class="chart-card recon-card" id="card-recon">
         <div class="chart-header">
           <div>
-            <div class="chart-title">Signal Reconciliation — Last 7 Days</div>
+            <div class="chart-title">Signal Reconciliation</div>
+            <div class="date-label fixed">Fixed · last 7 days · not affected by date picker</div>
             <div class="chart-sub">Every CRM event accounted for · status breakdown by day</div>
           </div>
           <div style="display:flex;align-items:center;gap:0.75rem">
@@ -870,6 +912,48 @@ function filterByPeriod(rows, mode) {
   });
 }
 
+// Responsive widget IDs (shimmer on date change)
+const RESPONSIVE_CARDS = ['card-kpis', 'card-ec', 'card-cpl'];
+// Fixed widget IDs (no shimmer)
+const FIXED_CARDS = ['card-campaigns', 'card-recon'];
+
+function getDateLabelText(days) {
+  const now = new Date();
+  const end = now.toLocaleDateString('en-IN', {day:'numeric',month:'short'});
+  if (days === 'today') return 'Today · ' + end;
+  if (days === 'yesterday') {
+    const y = new Date(now); y.setDate(y.getDate()-1);
+    return 'Yesterday · ' + y.toLocaleDateString('en-IN', {day:'numeric',month:'short'});
+  }
+  if (days === 'this_month') return 'This month · ' + now.toLocaleDateString('en-IN', {month:'long',year:'numeric'});
+  const d = parseInt(days);
+  if (!isNaN(d)) {
+    const start = new Date(now); start.setDate(start.getDate()-d);
+    return 'Last ' + d + ' days · ' + start.toLocaleDateString('en-IN',{day:'numeric',month:'short'}) + ' – ' + end;
+  }
+  return '';
+}
+
+function updateDateLabels() {
+  const label = getDateLabelText(activeDays);
+  ['dl-ec','dl-cpl'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = label;
+  });
+  // Update campaigns fixed label with GAds period
+  const campEl = document.getElementById('dl-campaigns');
+  if (campEl) campEl.textContent = label;
+}
+
+function shimmerCards() {
+  RESPONSIVE_CARDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add('loading-shimmer');
+    setTimeout(() => el.classList.remove('loading-shimmer'), 800);
+  });
+}
+
 function handleDateDropdown(sel) {
   const val = sel.value;
   if (val === 'custom') {
@@ -878,13 +962,27 @@ function handleDateDropdown(sel) {
   }
   document.getElementById('date-picker-wrap').classList.remove('open');
   activeDays = val;
+
+  // Shimmer responsive widgets
+  shimmerCards();
+
   const lu = document.getElementById('last-updated');
-  if (lu) lu.textContent = 'Applying date filter…';
-  requestAnimationFrame(() => {
+  if (lu) lu.textContent = 'Applying…';
+
+  // Re-fetch GAds data with new date range + re-render sheet data
+  Promise.allSettled([
+    fetchGadsStats(activeDays),
+  ]).then(([gads]) => {
+    if (gads.status === 'fulfilled') {
+      gadsData = gads.value;
+      renderGadsKPIs(gadsData);
+      initCplChart(gadsData.weekly_cpl, gadsData.weekly_leads || null);
+    }
     renderAll();
+    updateDateLabels();
     if (lu) {
       const now = new Date();
-      lu.textContent = 'Updated ' + now.toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'});
+      lu.textContent = 'Last updated: ' + now.toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'});
     }
   });
 }
@@ -2099,7 +2197,7 @@ async function signOut() {
   window.location.href = '/login.html';
 }
 
-loadData();
+loadData().then(() => updateDateLabels());
 setInterval(loadData, REFRESH_MS);
 // ── Panel switching ───────────────────────────────────────────
 let currentPanel = 'dashboard';
