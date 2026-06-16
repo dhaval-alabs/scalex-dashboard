@@ -1,133 +1,45 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { callReconMCP } from "@/lib/recon";
-import { fetchGadsStats } from "@/lib/gads";
 import { PageHeader } from "@/components/ui";
 
-interface Msg { role: "user" | "assistant"; content: string; isLoading?: boolean; data?: any; tool?: string; }
-
-// Routes to Recon MCP tools (relay pipeline data)
-function routeToTool(q: string): { tool: string; args: Record<string, unknown>; label: string } | null {
-  const t = q.toLowerCase();
-  const today = new Date().toISOString().slice(0, 10);
-  const weekAgo = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
-  if (t.includes("health") || t.includes("attach") || t.includes("ec only") ||
-      t.includes("ec-only") || t.includes("gclid rate") || t.includes("needs_review") ||
-      t.includes("relay status") || t.includes("how is relay") || t.includes("signal quality"))
-    return { tool: "get_relay_health", args: { days: 7 }, label: "Relay Health (7d)" };
-  if (t.includes("reconcil") || t.includes("vs gads") || t.includes("vs google") ||
-      t.includes("match") || t.includes("gap") || t.includes("relay ahead") || t.includes("difference"))
-    return { tool: "reconcile_relay_vs_gads", args: { startDate: weekAgo, endDate: today }, label: "Relay vs GAds (7d)" };
-  if (t.includes("coverage") || t.includes("source") || t.includes("hole") ||
-      t.includes("blind") || t.includes("skip") || t.includes("whatsapp") ||
-      t.includes("walk-in") || t.includes("losing"))
-    return { tool: "get_coverage_by_source", args: { days: 7 }, label: "Coverage by Source" };
-  if (t.includes("trend") || t.includes("over time") || t.includes("improving") || t.includes("degrading"))
-    return { tool: "get_signal_quality_trend", args: { days: 30 }, label: "Signal Quality Trend (30d)" };
-  if (t.includes("batch") || t.includes("landed") || t.includes("restatement") ||
-      t.includes("upload") || t.includes("adjustment") || t.includes("partial_fail"))
-    return { tool: "verify_batch_landed", args: { lastN: 5 }, label: "Batch Verification" };
-  return null;
-}
-
-// Routes to Google Ads data (campaign performance, spend, CPL)
-function isGadsQuestion(q: string): boolean {
-  const t = q.toLowerCase();
-  return t.includes("campaign") || t.includes("spend") || t.includes("cpl") ||
-         t.includes("cost per lead") || t.includes("roas") || t.includes("conversion") ||
-         t.includes("click") || t.includes("impression") || t.includes("budget") ||
-         t.includes("performing") || t.includes("performance") || t.includes("week over week") ||
-         t.includes("week on week") || t.includes("wow") || t.includes("how many") ||
-         t.includes("best campaign") || t.includes("worst campaign") || t.includes("top campaign") ||
-         t.includes("google ads") || t.includes("adwords") || t.includes("which campaign");
-}
+interface Msg { role: "user" | "assistant"; content: string; isLoading?: boolean; }
 
 const QUICK = [
-  "What's the relay health right now?",
   "How many campaigns are running and which performs best?",
-  "What's my CPL this month?",
+  "What's my total spend and CPL this month?",
+  "What's the relay health right now?",
   "Show me coverage by source",
+  "Which keywords are wasting budget?",
   "Is signal quality improving over time?",
-  "Where are we losing GCLID coverage?",
+  "Reconcile relay vs Google Ads this week",
+  "What's my budget pacing today?",
 ];
 
-// Render markdown-ish text: bold, bullets, ## headers
 function RenderMarkdown({ text }: { text: string }) {
   const lines = text.split("\n");
   return (
     <div style={{ fontSize: "0.88rem", lineHeight: 1.75, color: "var(--text2)" }}>
       {lines.map((line, i) => {
-        const trimmed = line.trim();
-        if (!trimmed) return <div key={i} style={{ height: "0.5rem" }} />;
-        // ## header
-        if (trimmed.startsWith("## ")) {
-          return <div key={i} style={{ fontWeight: 700, fontSize: "0.92rem", color: "var(--text)", marginBottom: "0.35rem", marginTop: i > 0 ? "0.75rem" : 0 }}>{trimmed.slice(3)}</div>;
-        }
-        // bullet
-        if (trimmed.startsWith("- ")) {
+        const t = line.trim();
+        if (!t) return <div key={i} style={{ height: "0.4rem" }} />;
+        if (t.startsWith("### "))
+          return <div key={i} style={{ fontWeight: 700, fontSize: "0.88rem", color: "var(--text)", margin: "0.6rem 0 0.2rem" }}>{t.slice(4)}</div>;
+        if (t.startsWith("## "))
+          return <div key={i} style={{ fontWeight: 700, fontSize: "0.92rem", color: "var(--text)", margin: "0.75rem 0 0.25rem" }}>{t.slice(3)}</div>;
+        if (t.startsWith("- ") || t.startsWith("• "))
           return (
             <div key={i} style={{ display: "flex", gap: "0.5rem", marginBottom: "0.2rem" }}>
-              <span style={{ color: "var(--teal)", marginTop: "2px", flexShrink: 0 }}>▸</span>
-              <span dangerouslySetInnerHTML={{ __html: trimmed.slice(2).replace(/\*\*([^*]+)\*\*/g, '<strong style="color:var(--text)">$1</strong>') }} />
+              <span style={{ color: "var(--teal)", flexShrink: 0, marginTop: "2px" }}>▸</span>
+              <span dangerouslySetInnerHTML={{ __html: t.slice(2).replace(/\*\*([^*]+)\*\*/g, '<strong style="color:var(--text)">$1</strong>') }} />
             </div>
           );
-        }
-        // normal line with bold
         return (
-          <div key={i} style={{ marginBottom: "0.15rem" }}
-            dangerouslySetInnerHTML={{ __html: trimmed.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:var(--text)">$1</strong>') }} />
+          <div key={i} style={{ marginBottom: "0.1rem" }}
+            dangerouslySetInnerHTML={{ __html: t.replace(/\*\*([^*]+)\*\*/g, '<strong style="color:var(--text)">$1</strong>') }} />
         );
       })}
     </div>
   );
-}
-
-// Mini KPI cards for tool data
-function DataCards({ tool, data }: { tool: string; data: any }) {
-  if (tool === "get_relay_health") {
-    const cards = [
-      { label: "GCLID Attach", value: data.rates?.gclid_attach_rate, accent: "var(--teal)" },
-      { label: "EC Only", value: data.rates?.ec_only_rate, accent: "var(--amber)" },
-      { label: "Error Rate", value: data.rates?.error_rate, accent: "var(--coral)" },
-      { label: "Total Rows (7d)", value: data.total_rows, accent: "var(--purple)" },
-    ];
-    return (
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "0.5rem", marginBottom: "0.9rem" }}>
-        {cards.map((c) => (
-          <div key={c.label} style={{ background: "var(--surface2)", borderRadius: "var(--radius3)", padding: "0.6rem 0.75rem", borderTop: `2px solid ${c.accent}` }}>
-            <div style={{ fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text4)", fontWeight: 600 }}>{c.label}</div>
-            <div style={{ fontSize: "1.1rem", fontWeight: 700, marginTop: "0.2rem", color: "var(--text)" }}>{c.value ?? "—"}</div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-  if (tool === "reconcile_relay_vs_gads" && data.daily_diff) {
-    return (
-      <div style={{ marginBottom: "0.9rem", overflowX: "auto" }}>
-        <table className="tbl" style={{ fontSize: "0.78rem" }}>
-          <thead><tr><th>Date</th><th className="num">Relay</th><th className="num">GAds</th><th>Status</th></tr></thead>
-          <tbody>{data.daily_diff.slice(0,7).map((r: any) => (
-            <tr key={r.date}><td>{r.date}</td><td className="num">{r.relay_total_sent}</td><td className="num">{r.gads_lead_submitted}</td><td style={{ fontSize: "0.75rem" }}>{r.status}</td></tr>
-          ))}</tbody>
-        </table>
-      </div>
-    );
-  }
-  if (tool === "get_coverage_by_source") {
-    const rows = data.sources || data.coverage || [];
-    return (
-      <div style={{ marginBottom: "0.9rem", overflowX: "auto" }}>
-        <table className="tbl" style={{ fontSize: "0.78rem" }}>
-          <thead><tr><th>Source</th><th className="num">Total</th><th className="num">Reached</th><th>Coverage</th></tr></thead>
-          <tbody>{rows.slice(0,8).map((r: any, i: number) => (
-            <tr key={i}><td>{r.source || r.stage}</td><td className="num">{r.total ?? r.total_leads}</td><td className="num">{r.reached ?? r.reaching_gads}</td><td>{r.coverage_pct || r.coverage}</td></tr>
-          ))}</tbody>
-        </table>
-      </div>
-    );
-  }
-  return null;
 }
 
 export default function AskAiPage() {
@@ -135,6 +47,7 @@ export default function AskAiPage() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [remaining, setRemaining] = useState<number | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -149,47 +62,8 @@ export default function AskAiPage() {
     setMsgs((m) => [...m, userMsg, { role: "assistant", content: "", isLoading: true }]);
 
     try {
-      const route = routeToTool(question);
-      let finalContent = question;
-      let toolData: any = null;
-      let toolName = "";
-
-      // Fetch GAds data if it's a campaign/spend/CPL question
-      if (isGadsQuestion(question)) {
-        try {
-          const gadsData = await fetchGadsStats(30);
-          toolData = gadsData;
-          toolName = "gads_stats";
-          finalContent = `${question}\n\n[LIVE GOOGLE ADS DATA — Last 30 days]\n${JSON.stringify(gadsData, null, 2)}`;
-        } catch (e: any) {
-          finalContent = `${question}\n\n[Could not fetch Google Ads data: ${e.message}]`;
-        }
-      }
-
-      // Also fetch relay data if there's a matching Recon tool (can combine both)
-      if (route && !isGadsQuestion(question)) {
-        try {
-          const relayData = await callReconMCP(route.tool, route.args);
-          if (!toolData) { toolData = relayData; toolName = route.tool; }
-          finalContent = `${question}\n\n[LIVE DATA — ${route.label}]\n${JSON.stringify(relayData, null, 2)}`;
-        } catch (e: any) {
-          finalContent = `${question}\n\n[Could not fetch ${route.label}: ${e.message}]`;
-        }
-      }
-
-      // Default fallback — fetch relay health for broad/overview questions
-      if (!toolData && !finalContent.includes("LIVE")) {
-        try {
-          const health = await callReconMCP("get_relay_health", { days: 7 });
-          toolData = health; toolName = "get_relay_health";
-          finalContent = `${question}\n\n[LIVE DATA — Relay Health (7d)]\n${JSON.stringify(health, null, 2)}`;
-        } catch { /* silent */ }
-      }
-
-      const history = [...msgs, userMsg].map((m) => ({
-        role: m.role,
-        content: m.role === "user" && m === userMsg ? finalContent : m.content,
-      }));
+      // Send full conversation history — backend handles all data fetching
+      const history = [...msgs, userMsg].map((m) => ({ role: m.role, content: m.content }));
 
       const resp = await fetch("/api/ask-ai", {
         method: "POST",
@@ -205,13 +79,9 @@ export default function AskAiPage() {
 
       const data = await resp.json();
       if (data.remaining_requests !== undefined) setRemaining(data.remaining_requests);
+      setLastUpdated(new Date().toLocaleString("en-IN", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" }));
 
-      setMsgs((m) => [...m.slice(0, -1), {
-        role: "assistant",
-        content: data.answer,
-        data: toolData,
-        tool: toolName,
-      }]);
+      setMsgs((m) => [...m.slice(0, -1), { role: "assistant", content: data.answer }]);
     } catch (e: any) {
       setMsgs((m) => [...m.slice(0, -1), { role: "assistant", content: `⚠️ ${e.message || "Something went wrong."}` }]);
     } finally {
@@ -222,44 +92,64 @@ export default function AskAiPage() {
 
   return (
     <>
-      <PageHeader title="Ask AI" sub="Conversational analytics powered by the ScaleX Recon engine" />
+      <PageHeader title="Ask AI" sub="Live Google Ads + relay intelligence — powered by ScaleX" />
 
-      <div style={{ background: "var(--teal-dim)", border: "1px solid var(--teal)", color: "var(--teal)", fontSize: "0.82rem", padding: "0.7rem 1rem", borderRadius: "var(--radius2)", marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span>Live mode — pulls real Recon MCP data, interpreted by AI. Ask follow-ups naturally.</span>
-        {remaining !== null && <span style={{ fontFamily: "var(--mono)", fontSize: "0.7rem", opacity: 0.8 }}>{remaining} requests left this hour</span>}
+      {/* Status bar */}
+      <div style={{ background: "var(--teal-dim)", border: "1px solid var(--teal)", color: "var(--teal)", fontSize: "0.8rem", padding: "0.65rem 1rem", borderRadius: "var(--radius2)", marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
+        <div style={{ display: "flex", gap: "1rem", alignItems: "center", flexWrap: "wrap" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--green)", display: "inline-block" }} />
+            Google Ads live
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--green)", display: "inline-block" }} />
+            Relay pipeline live
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--text4)", display: "inline-block" }} />
+            Meta Ads (not connected)
+          </span>
+          <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--text4)", display: "inline-block" }} />
+            GA4 (not connected)
+          </span>
+        </div>
+        {remaining !== null && <span style={{ fontFamily: "var(--mono)", fontSize: "0.68rem", opacity: 0.8 }}>{remaining} requests left this hour</span>}
       </div>
 
+      {/* Quick questions */}
       {msgs.length === 0 && (
         <div className="card">
-          <div className="card-head"><div className="card-title">Quick questions</div><div className="card-sub">Click any question or type your own below</div></div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem" }}>
+          <div className="card-head">
+            <div className="card-title">Ask anything about AnalytixLabs performance</div>
+            <div className="card-sub">Pulls live data from Google Ads and the ScaleX relay pipeline</div>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
             {QUICK.map((q) => (
-              <div key={q} className="btn" style={{ justifyContent: "flex-start", textAlign: "left", padding: "0.7rem 0.9rem", cursor: "pointer" }} onClick={() => ask(q)}>{q}</div>
+              <div key={q} className="btn"
+                style={{ justifyContent: "flex-start", textAlign: "left", padding: "0.65rem 0.9rem", cursor: "pointer", fontSize: "0.82rem" }}
+                onClick={() => ask(q)}>
+                {q}
+              </div>
             ))}
           </div>
         </div>
       )}
 
+      {/* Chat thread */}
       <div style={{ display: "flex", flexDirection: "column", gap: "1rem", paddingBottom: "6rem" }}>
         {msgs.map((m, i) => (
           <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
             {m.role === "user" ? (
-              // User bubble — dark surface, readable text
               <div style={{ maxWidth: "70%", background: "var(--surface2)", color: "var(--text)", padding: "0.65rem 1rem", borderRadius: "16px 16px 4px 16px", fontSize: "0.88rem", lineHeight: 1.5, border: "1px solid var(--border2)" }}>
                 {m.content}
               </div>
             ) : (
               <div style={{ maxWidth: "85%" }} className={m.isLoading ? "card shimmer" : "card"}>
-                {m.isLoading ? (
-                  <div style={{ color: "var(--text4)", fontSize: "0.85rem", padding: "0.25rem 0" }}>Thinking…</div>
-                ) : (
-                  <>
-                    {/* Data cards first if tool was called */}
-                    {m.data && m.tool && <DataCards tool={m.tool} data={m.data} />}
-                    {/* Then the AI interpretation */}
-                    <RenderMarkdown text={m.content} />
-                  </>
-                )}
+                {m.isLoading
+                  ? <div style={{ color: "var(--text4)", fontSize: "0.85rem", padding: "0.25rem 0" }}>Fetching live data and thinking…</div>
+                  : <RenderMarkdown text={m.content} />
+                }
               </div>
             )}
           </div>
@@ -267,16 +157,19 @@ export default function AskAiPage() {
         <div ref={endRef} />
       </div>
 
+      {/* Sticky input */}
       <div style={{ position: "fixed", bottom: 0, left: "var(--sidebar-w)", right: 0, padding: "1rem 2rem", background: "var(--bg)", borderTop: "1px solid var(--border)" }}>
+        {lastUpdated && <div style={{ fontSize: "0.65rem", color: "var(--text4)", marginBottom: "0.4rem", fontFamily: "var(--mono)" }}>Last response: {lastUpdated}</div>}
         <div style={{ display: "flex", gap: "0.5rem", maxWidth: "900px" }}>
-          <input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)}
+          <input ref={inputRef} value={input}
+            onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(input); } }}
-            placeholder="Ask about relay health, CPL, coverage gaps, what NEEDS_REVIEW means…"
+            placeholder="Ask about campaigns, CPL, keywords, relay health, budget pacing…"
             disabled={busy}
             style={{ flex: 1, padding: "0.75rem 1rem", background: "var(--surface)", border: "1px solid var(--border2)", borderRadius: "var(--radius2)", color: "var(--text)", fontFamily: "var(--font)", fontSize: "0.88rem", outline: "none" }}
           />
           <button className="btn"
-            style={{ background: busy ? "var(--surface2)" : "var(--teal)", color: busy ? "var(--text4)" : "#fff", border: "none", padding: "0 1.4rem", borderRadius: "var(--radius2)", cursor: busy ? "not-allowed" : "pointer", fontWeight: 600 }}
+            style={{ background: busy ? "var(--surface2)" : "var(--teal)", color: busy ? "var(--text4)" : "#fff", border: "none", padding: "0 1.4rem", borderRadius: "var(--radius2)", cursor: busy ? "not-allowed" : "pointer", fontWeight: 600, fontSize: "0.88rem" }}
             onClick={() => ask(input)} disabled={busy}>
             {busy ? "…" : "Send"}
           </button>
