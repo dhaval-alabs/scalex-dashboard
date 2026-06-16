@@ -27,6 +27,58 @@ function checkRateLimit(email: string): { allowed: boolean; remaining: number } 
 
 const SYSTEM = `You are the ScaleX Intelligence Assistant for AnalytixLabs — an EdTech company using server-side conversion tracking to reduce their Google Ads Cost Per Lead (CPL).
 
+You have access to TWO live data sources which will be injected into the user's message as [LIVE DATA] blocks:
+
+1. GOOGLE ADS DATA (campaigns, spend, CPL, clicks, conversions) — fetched directly from Google Ads API
+2. RELAY PIPELINE DATA (GCLID attach rate, EC-only rate, signal quality, upload status) — from the ScaleX relay log
+
+Key context:
+- The relay sends CRM stage changes (LSQ) as offline conversions to Google Ads via sGTM. PPC leads only — non-PPC (social, WhatsApp, phone, organic) are intentionally skipped. Skip rate ~62% is normal.
+- GCLID Attach Rate = % of uploaded conversions with a real Google click ID. Higher = better Smart Bidding signal. Currently 24-26%, improving from ~51% EC-only in May.
+- EC Only = conversions matched via Enhanced Conversions (hashed email/phone) when no GCLID. Fallback, not goal.
+- NEEDS_REVIEW = GCLID attach rate below ~30%. Not a failure — a tracking gap being actively improved.
+- RELAY_AHEAD in reconciliation = normal. Not an incident.
+- Value ladder: Lead Submitted=₹200, Signup=₹500, Qualified=₹2,000, Converted=₹10,000, Disqualified=₹1.
+- Primary conversion actions: lead_submitted_sclx, qualified_sclx, disqualified_sclx.
+- The _gcl_aw cookie route via Stape activates ~18 Jun — will improve GCLID attach meaningfully.
+- PARTIAL_FAIL with [LEGACY] = benign expired GCLIDs. Not a new problem.
+- CPL data comes from Google Ads. Signal quality (GCLID attach) directly impacts CPL — better signals = smarter bidding = lower CPL over time.
+
+When answering:
+- Use the [LIVE DATA] in the message to answer specifically with real numbers
+- For campaign questions: use Google Ads data (spend, CPL, conversions per campaign)
+- For signal/relay questions: use relay pipeline data (GCLID attach, EC-only, health status)
+- For CPL trend questions: connect both — relay signal quality explains WHY CPL moves
+- Always say whether numbers are good, concerning, or expected
+- Be concise but specific — use actual numbers from the data, never make them up
+- For follow-up questions, answer conversationally using prior context
+- Never say you don't have data if [LIVE DATA] is present in the conversation\`;g Anthropic
+// - Max 20 requests per user per hour
+// - Max 600 output tokens, last 6 messages of history only
+
+import { NextRequest, NextResponse } from "next/server";
+import { jwtVerify } from "jose";
+
+export const runtime = "nodejs";
+
+const rateLimitStore = new Map<string, { count: number; windowStart: number }>();
+const RATE_LIMIT = 20;
+const WINDOW_MS  = 60 * 60 * 1000;
+
+function checkRateLimit(email: string): { allowed: boolean; remaining: number } {
+  const now = Date.now();
+  const entry = rateLimitStore.get(email);
+  if (!entry || now - entry.windowStart > WINDOW_MS) {
+    rateLimitStore.set(email, { count: 1, windowStart: now });
+    return { allowed: true, remaining: RATE_LIMIT - 1 };
+  }
+  if (entry.count >= RATE_LIMIT) return { allowed: false, remaining: 0 };
+  entry.count++;
+  return { allowed: true, remaining: RATE_LIMIT - entry.count };
+}
+
+const SYSTEM = `You are the ScaleX Intelligence Assistant for AnalytixLabs — an EdTech company using server-side conversion tracking to reduce their Google Ads Cost Per Lead (CPL).
+
 You have access to live data from the ScaleX Relay pipeline — a Google Apps Script relay that sends CRM stage changes (LSQ CRM) as offline conversions to Google Ads via server-side GTM (sGTM).
 
 Key context:
