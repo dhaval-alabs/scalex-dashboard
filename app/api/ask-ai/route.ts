@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
       "X-Title": "ScaleX Dashboard",
     },
     body: JSON.stringify({
-      model: "nvidia/llama-3.1-nemotron-70b-instruct:free",
+      model: "meta-llama/llama-3.3-70b-instruct:free",
       messages: [
         { role: "system", content: SYSTEM },
         ...trimmedMessages
