@@ -1,0 +1,113 @@
+// lib/metrics.ts — single source of truth for relay-derived metrics.
+// All pages compute from these helpers so numbers never diverge between widgets.
+
+import { RelayRow } from "./sheets";
+
+export interface RelaySummary {
+  total: number;
+  success: number;
+  ecOnly: number;
+  failed: number;
+  skipped: number;
+  gclidAttached: number;   // rows that reached GAds with a real gclid
+  ecOnlyReached: number;   // rows that reached GAds via EC only
+  reached: number;         // success + ecOnly (uploaded to GAds)
+  gclidAttachRate: number; // gclid / reached
+  ecOnlyRate: number;      // ecOnly / reached
+  byConv: Record<string, number>;
+}
+
+export function summarize(rows: RelayRow[]): RelaySummary {
+  let success = 0, ecOnly = 0, failed = 0, skipped = 0;
+  const byConv: Record<string, number> = {};
+  for (const r of rows) {
+    const s = r.status;
+    if (s === "SUCCESS") success++;
+    else if (s === "SUCCESS_EC_ONLY") ecOnly++;
+    else if (s.includes("FAIL")) failed++;
+    else if (s.startsWith("SKIP")) skipped++;
+    if (r.convId) byConv[r.convId] = (byConv[r.convId] || 0) + 1;
+  }
+  const reached = success + ecOnly;
+  return {
+    total: rows.length, success, ecOnly, failed, skipped,
+    gclidAttached: success, ecOnlyReached: ecOnly, reached,
+    gclidAttachRate: reached ? success / reached : 0,
+    ecOnlyRate: reached ? ecOnly / reached : 0,
+    byConv,
+  };
+}
+
+// EC Recovery daily series: % of reached conversions that were EC-only
+export function ecRecoveryDaily(rows: RelayRow[]): { date: string; ecOnly: number; gclid: number; pct: number }[] {
+  const byDate: Record<string, { ec: number; gclid: number }> = {};
+  for (const r of rows) {
+    if (r.status !== "SUCCESS" && r.status !== "SUCCESS_EC_ONLY") continue;
+    const m = r.timestamp.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (!m) continue;
+    const key = `${m[3]}-${m[1].padStart(2, "0")}-${m[2].padStart(2, "0")}`;
+    if (!byDate[key]) byDate[key] = { ec: 0, gclid: 0 };
+    if (r.status === "SUCCESS_EC_ONLY") byDate[key].ec++;
+    else byDate[key].gclid++;
+  }
+  return Object.entries(byDate).sort().map(([date, v]) => {
+    const tot = v.ec + v.gclid;
+    return { date, ecOnly: v.ec, gclid: v.gclid, pct: tot ? Math.round((v.ec / tot) * 100) : 0 };
+  });
+}
+
+// Coverage by source: leads per source, how many reached GAds vs skipped
+export function coverageBySource(rows: RelayRow[]): { source: string; total: number; reached: number; skipped: number; coverage: number }[] {
+  const bySrc: Record<string, { total: number; reached: number; skipped: number }> = {};
+  for (const r of rows) {
+    const src = r.source || "(unknown)";
+    if (!bySrc[src]) bySrc[src] = { total: 0, reached: 0, skipped: 0 };
+    bySrc[src].total++;
+    if (r.status === "SUCCESS" || r.status === "SUCCESS_EC_ONLY") bySrc[src].reached++;
+    else if (r.status.startsWith("SKIP")) bySrc[src].skipped++;
+  }
+  return Object.entries(bySrc)
+    .map(([source, v]) => ({ source, ...v, coverage: v.total ? v.reached / v.total : 0 }))
+    .sort((a, b) => b.total - a.total);
+}
+
+// Skip-reason breakdown (parse Message column)
+export function skipBreakdown(rows: RelayRow[]): { reason: string; count: number }[] {
+  const reasons: Record<string, number> = {};
+  for (const r of rows) {
+    if (!r.status.startsWith("SKIP")) continue;
+    let reason = "Other";
+    const m = r.message.match(/Non-PPC source:\s*"([^"]*)"/);
+    if (m) reason = `Non-PPC: ${m[1] || "(blank)"}`;
+    else if (r.message.includes("inactive")) reason = "Drop stage (inactive)";
+    else if (r.status === "SKIP_DROP_STAGE") reason = "Drop stage";
+    reasons[reason] = (reasons[reason] || 0) + 1;
+  }
+  return Object.entries(reasons).map(([reason, count]) => ({ reason, count })).sort((a, b) => b.count - a.count);
+}
+
+// Smart bidding maturity: conversion volume per _sclx-mapped convId
+export function biddingMaturity(rows: RelayRow[]): { action: string; count: number; label: string }[] {
+  const sum = summarize(rows);
+  const labels: Record<string, string> = {
+    lead_submitted: "Lead Submitted (₹200)",
+    signup: "Signup (₹500)",
+    qualified: "Qualified (₹2,000)",
+    converted: "Converted (₹10,000)",
+    disqualified: "Disqualified (₹1)",
+  };
+  return Object.entries(sum.byConv)
+    .map(([action, count]) => ({ action, count, label: labels[action] || action }))
+    .sort((a, b) => b.count - a.count);
+}
+
+// Funnel: count by bucket in ladder order
+export function funnel(rows: RelayRow[]): { stage: string; count: number }[] {
+  const sum = summarize(rows);
+  const order = ["lead_submitted", "signup", "qualified", "converted", "disqualified"];
+  const labels: Record<string, string> = {
+    lead_submitted: "Lead Submitted", signup: "Signup", qualified: "Qualified",
+    converted: "Converted", disqualified: "Disqualified",
+  };
+  return order.filter((k) => sum.byConv[k]).map((k) => ({ stage: labels[k], count: sum.byConv[k] }));
+}

@@ -1,0 +1,113 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+/* ── Design tokens — ported verbatim from v1 dashboard ── */
+:root {
+  --bg: #EEF2F7; --surface: #FFFFFF; --surface2: #F8FAFC;
+  --border: rgba(0,0,0,0.06); --border2: rgba(0,0,0,0.10);
+  --text: #0F1923; --text2: #374151; --text3: #6B7280; --text4: #9CA3AF;
+  --blue: #0D9E6E; --blue-lt: #ECFDF5;
+  --teal: #0D9488; --teal-lt: #F0FDFA; --teal-dim: rgba(13,148,136,0.12);
+  --purple: #7C3AED; --purple-lt: #F5F3FF;
+  --amber: #D97706; --amber-lt: #FFFBEB;
+  --green: #059669; --green-lt: #ECFDF5;
+  --coral: #DC2626; --coral-lt: #FEF2F2; --red: #DC2626;
+  --chart-grid: rgba(0,0,0,0.05);
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --radius: 12px; --radius2: 8px; --radius3: 6px;
+  --sidebar-w: 220px;
+  --font: 'IBM Plex Sans', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+}
+
+[data-theme="dark"] {
+  --bg: #0A0A0C; --surface: #111113; --surface2: #18181B;
+  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.12);
+  --text: #F1F5F9; --text2: #CBD5E1; --text3: #94A3B8; --text4: #64748B;
+  --blue: #10B981; --blue-lt: rgba(16,185,129,0.12);
+  --teal: #14B8A6; --teal-lt: rgba(20,184,166,0.1); --teal-dim: rgba(20,184,166,0.12);
+  --purple: #A78BFA; --purple-lt: rgba(167,139,250,0.1);
+  --amber: #F59E0B; --amber-lt: rgba(245,158,11,0.1);
+  --green: #10B981; --green-lt: rgba(16,185,129,0.1);
+  --coral: #F87171; --coral-lt: rgba(248,113,113,0.1); --red: #EF4444;
+  --chart-grid: rgba(255,255,255,0.04);
+  --shadow: none; --shadow-md: none;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--text); font-family: var(--font); -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+
+/* ── Layout shell ── */
+.app-shell { display: flex; min-height: 100vh; }
+.sidebar {
+  width: var(--sidebar-w); flex-shrink: 0; background: var(--surface);
+  border-right: 1px solid var(--border); padding: 1.25rem 0.75rem;
+  position: fixed; top: 0; bottom: 0; left: 0; overflow-y: auto; z-index: 20;
+}
+.main { margin-left: var(--sidebar-w); flex: 1; padding: 1.5rem 2rem; max-width: calc(100vw - var(--sidebar-w)); }
+
+/* ── Brand ── */
+.brand { display: flex; align-items: center; gap: 0.5rem; padding: 0 0.5rem 0.25rem; }
+.brand-logo { width: 28px; height: 28px; border-radius: 7px; background: linear-gradient(135deg, var(--teal), var(--blue)); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 14px; }
+.brand-name { font-weight: 700; font-size: 0.95rem; letter-spacing: -0.01em; }
+.brand-sub { font-size: 0.7rem; color: var(--text4); padding: 0 0.5rem; margin-bottom: 1rem; }
+
+/* ── Range selector (sidebar) ── */
+.range-box { padding: 0.5rem; margin: 0 0.25rem 1rem; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius2); }
+.range-box label { display: block; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text4); margin-bottom: 0.35rem; font-weight: 600; }
+.range-box select { width: 100%; padding: 0.4rem 0.5rem; background: var(--surface); color: var(--text); border: 1px solid var(--border2); border-radius: var(--radius3); font-family: var(--font); font-size: 0.8rem; cursor: pointer; }
+.range-label { font-family: var(--mono); font-size: 0.62rem; color: var(--text4); margin-top: 0.4rem; }
+
+/* ── Nav ── */
+.nav-group { margin-bottom: 1rem; }
+.nav-group-title { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text4); padding: 0 0.5rem; margin-bottom: 0.35rem; font-weight: 600; }
+.nav-link { display: flex; align-items: center; gap: 0.55rem; padding: 0.5rem 0.6rem; border-radius: var(--radius3); font-size: 0.85rem; color: var(--text2); cursor: pointer; transition: background 0.12s, color 0.12s; margin-bottom: 1px; }
+.nav-link:hover { background: var(--surface2); color: var(--text); }
+.nav-link.active { background: var(--teal-dim); color: var(--teal); font-weight: 600; }
+.nav-link .ico { width: 15px; height: 15px; opacity: 0.8; }
+
+/* ── Page header ── */
+.page-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.25rem; gap: 1rem; flex-wrap: wrap; }
+.page-title { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; }
+.page-sub { font-size: 0.85rem; color: var(--text3); margin-top: 2px; }
+.page-actions { display: flex; align-items: center; gap: 0.5rem; }
+.btn { padding: 0.45rem 0.8rem; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--radius3); font-size: 0.8rem; color: var(--text2); cursor: pointer; font-family: var(--font); display: inline-flex; align-items: center; gap: 0.35rem; }
+.btn:hover { background: var(--surface2); color: var(--text); }
+
+/* ── Cards ── */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.1rem 1.25rem; box-shadow: var(--shadow); margin-bottom: 1.25rem; position: relative; overflow: hidden; }
+.card-head { margin-bottom: 0.9rem; }
+.card-title { font-size: 1rem; font-weight: 600; }
+.card-sub { font-size: 0.78rem; color: var(--text3); margin-top: 2px; }
+.card-date { font-family: var(--mono); font-size: 0.65rem; color: var(--text4); letter-spacing: 0.04em; margin-top: 3px; }
+.card-date.fixed { opacity: 0.65; }
+
+/* ── KPI grid ── */
+.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 0.85rem; margin-bottom: 1.25rem; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.9rem 1rem; box-shadow: var(--shadow); border-top: 2px solid var(--accent, var(--teal)); }
+.kpi-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text4); font-weight: 600; }
+.kpi-value { font-size: 1.55rem; font-weight: 700; margin-top: 0.3rem; letter-spacing: -0.02em; }
+.kpi-foot { font-size: 0.7rem; color: var(--text3); margin-top: 0.2rem; }
+
+/* ── Shimmer (loading) ── */
+.shimmer { position: relative; overflow: hidden; }
+.shimmer::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(125,125,125,0.07), transparent); background-size: 200% 100%; animation: sh 0.9s ease-in-out infinite; pointer-events: none; }
+@keyframes sh { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+/* ── Tables ── */
+.tbl { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.tbl th { text-align: left; padding: 0.5rem 0.6rem; color: var(--text4); font-weight: 600; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); }
+.tbl td { padding: 0.55rem 0.6rem; border-bottom: 1px solid var(--border); color: var(--text2); }
+.tbl tr:last-child td { border-bottom: none; }
+.tbl .num { text-align: right; font-family: var(--mono); }
+
+/* ── Badges ── */
+.badge { display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px; border-radius: 99px; font-size: 0.68rem; font-weight: 600; }
+.badge.green { background: var(--green-lt); color: var(--green); }
+.badge.amber { background: var(--amber-lt); color: var(--amber); }
+.badge.coral { background: var(--coral-lt); color: var(--coral); }
+.badge.teal { background: var(--teal-lt); color: var(--teal); }
+
+.loading-msg { color: var(--text3); font-size: 0.85rem; padding: 2rem; text-align: center; }
+.empty-msg { color: var(--text4); font-size: 0.85rem; padding: 1.5rem; text-align: center; }
