@@ -84,19 +84,19 @@ export default function Sidebar() {
             ))}
           </div>
         ))}
+      </div>
 
-        <div className="nav-group">
-          <div className="nav-link" onClick={toggleTheme} style={{ cursor: "pointer" }}>
-            <span style={{ marginRight: "0.55rem" }}>{theme === "dark" ? "☀" : "☾"}</span>
-            {theme === "dark" ? "Light mode" : "Dark mode"}
-          </div>
-          <div className="nav-link" onClick={async () => {
-            await fetch("/api/auth/logout", { method: "POST" });
-            router.push("/login");
-          }} style={{ cursor: "pointer" }}>
-            <span style={{ marginRight: "0.55rem" }}>⏻</span>
-            Sign out
-          </div>
+      <div className="nav-group" style={{ marginTop: "auto", borderTop: "1px solid var(--border)", paddingTop: "0.75rem", paddingBottom: "0.25rem" }}>
+        <div className="nav-link" onClick={toggleTheme} style={{ cursor: "pointer" }}>
+          <span style={{ marginRight: "0.55rem" }}>{theme === "dark" ? "☀" : "☾"}</span>
+          {theme === "dark" ? "Light mode" : "Dark mode"}
+        </div>
+        <div className="nav-link" onClick={async () => {
+          await fetch("/api/auth/logout", { method: "POST" });
+          router.push("/login");
+        }} style={{ cursor: "pointer" }}>
+          <span style={{ marginRight: "0.55rem" }}>⏻</span>
+          Sign out
         </div>
       </div>
 
