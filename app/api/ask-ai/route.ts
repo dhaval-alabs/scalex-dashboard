@@ -91,35 +91,38 @@ export async function POST(req: NextRequest) {
   // Cap conversation history to last 6 messages to control token cost
   const trimmedMessages = messages.slice(-6);
 
-  // ── 4. Call Anthropic ──────────────────────────────────────────
-  const anthropicKey = process.env.ANTHROPIC_API_KEY;
-  if (!anthropicKey) {
+  // ── 4. Call OpenRouter ─────────────────────────────────────────
+  const openrouterKey = process.env.OPENROUTER_API_KEY;
+  if (!openrouterKey) {
     return NextResponse.json({ error: "AI service not configured" }, { status: 500 });
   }
 
-  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+  const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": anthropicKey,
-      "anthropic-version": "2023-06-01",
+      "Authorization": `Bearer ${openrouterKey}`,
+      "HTTP-Referer": "https://analytixlabs.scaletrix.ai",
+      "X-Title": "ScaleX Dashboard",
     },
     body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
+      model: "nvidia/llama-3.1-nemotron-70b-instruct:free",
+      messages: [
+        { role: "system", content: SYSTEM },
+        ...trimmedMessages
+      ],
       max_tokens: 600,
-      system: SYSTEM,
-      messages: trimmedMessages,
     }),
   });
 
   if (!resp.ok) {
     const err = await resp.text();
-    console.error("Anthropic error:", err);
+    console.error("OpenRouter error:", err);
     return NextResponse.json({ error: "AI service error" }, { status: 502 });
   }
 
   const result = await resp.json();
-  const answer = result.content?.[0]?.text ?? "No response generated.";
+  const answer = result.choices?.[0]?.message?.content ?? "No response generated.";
 
   return NextResponse.json({
     answer,
