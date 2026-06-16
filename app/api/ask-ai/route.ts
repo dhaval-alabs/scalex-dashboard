@@ -36,10 +36,14 @@ async function callGadsMCP(tool: string, args: Record<string, unknown> = {}): Pr
     body: JSON.stringify(body),
   });
   if (!resp.ok) throw new Error(`GAds MCP error: ${resp.status}`);
-  const data = await resp.json();
+  const text = await resp.text();
+  // SSE format: "event: message\ndata: {...}\n\n"
+  const dataLine = text.split("\n").find((l: string) => l.startsWith("data: "));
+  const data = dataLine ? JSON.parse(dataLine.slice(6)) : JSON.parse(text);
   if (data.error) throw new Error(data.error.message || "GAds MCP error");
-  const content = data.result?.content;
-  if (Array.isArray(content)) return content.map((c: any) => c.text || "").join("\n");
+  const resultContent = data.result?.content;
+  if (Array.isArray(resultContent)) return resultContent.map((c: any) => c.text || "").join("\n");
+  if (data.result?.tools) return data.result; // tools/list response
   return data.result;
 }
 
