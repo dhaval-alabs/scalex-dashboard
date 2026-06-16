@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
   if (!resp.ok) {
     const err = await resp.text();
     console.error("OpenRouter error:", err);
-    return NextResponse.json({ error: "AI service error" }, { status: 502 });
+    return NextResponse.json({ error: `AI service error: ${resp.status} - ${err}` }, { status: 502 });
   }
 
   const result = await resp.json();
