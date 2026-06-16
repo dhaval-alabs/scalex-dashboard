@@ -156,8 +156,10 @@ export default function AskAiPage() {
       });
 
       if (resp.status === 401) throw new Error("Session expired — please sign in again.");
-      if (resp.status === 429) { const d = await resp.json(); throw new Error(d.error); }
-      if (!resp.ok) throw new Error("AI service error. Please try again.");
+      if (!resp.ok) {
+        const d = await resp.json().catch(() => ({}));
+        throw new Error(d.error || "AI service error. Please try again.");
+      }
 
       const data = await resp.json();
       if (data.remaining_requests !== undefined) setRemaining(data.remaining_requests);
