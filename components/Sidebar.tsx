@@ -31,12 +31,26 @@ export default function Sidebar() {
 
   return (
     <aside className="sidebar">
-      <div className="brand">
-        <div className="brand-logo">S</div>
-        <div className="brand-name">ScaleX</div>
+      {/* Brand — Scaletrix logo */}
+      <div className="brand" style={{ marginBottom: "0.15rem" }}>
+        <img
+          src="https://scaletrix.ai/wp-content/uploads/2025/04/logo-3.webp"
+          alt="Scaletrix.AI"
+          style={{ height: "22px", width: "auto", display: "block" }}
+          onError={(e) => {
+            // fallback to icon if logo fails to load
+            const el = e.currentTarget as HTMLImageElement;
+            el.style.display = "none";
+            const fallback = el.nextElementSibling as HTMLElement;
+            if (fallback) fallback.style.display = "flex";
+          }}
+        />
+        {/* Fallback icon (hidden by default) */}
+        <div className="brand-logo" style={{ display: "none" }}>S</div>
       </div>
       <div className="brand-sub">AnalytixLabs · Workbench</div>
 
+      {/* Global range selector */}
       <div className="range-box">
         <label>Date Range</label>
         <select value={range} onChange={(e) => setRange(e.target.value as RangeValue)}>
@@ -57,10 +71,13 @@ export default function Sidebar() {
       ))}
 
       <div className="nav-group">
-        <div className="nav-link" onClick={toggleTheme}>
+        <div className="nav-link" onClick={toggleTheme} style={{ cursor: "pointer" }}>
           {theme === "dark" ? "☀ Light mode" : "☾ Dark mode"}
         </div>
-        <div className="nav-link" onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); router.push("/login"); }}>
+        <div className="nav-link" onClick={async () => {
+          await fetch("/api/auth/logout", { method: "POST" });
+          router.push("/login");
+        }} style={{ cursor: "pointer" }}>
           ⏻ Sign out
         </div>
       </div>
