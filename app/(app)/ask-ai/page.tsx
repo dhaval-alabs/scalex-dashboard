@@ -9,16 +9,42 @@ function routeToTool(q: string): { tool: string; args: Record<string, unknown>; 
   const t = q.toLowerCase();
   const today = new Date().toISOString().slice(0, 10);
   const weekAgo = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
-  if (t.includes("health") || t.includes("attach") || t.includes("ec only") || t.includes("ec-only") || t.includes("gclid rate"))
-    return { tool: "get_relay_health", args: { days: 7 }, label: "Relay Health (7d)" };
-  if (t.includes("reconcil") || t.includes("vs gads") || t.includes("vs google") || t.includes("match") || t.includes("gap"))
-    return { tool: "reconcile_relay_vs_gads", args: { startDate: weekAgo, endDate: today }, label: "Relay vs GAds (7d)" };
-  if (t.includes("coverage") || t.includes("source") || t.includes("hole") || t.includes("blind") || t.includes("skip"))
-    return { tool: "get_coverage_by_source", args: { days: 7 }, label: "Coverage by Source" };
-  if (t.includes("trend") || t.includes("quality") || t.includes("over time") || t.includes("improving") || t.includes("week"))
+
+  // Signal quality / trend — CPL trend, week over week, improving, degrading
+  if (t.includes("cpl") || t.includes("cost per lead") || t.includes("week over week") ||
+      t.includes("week on week") || t.includes("wow") || t.includes("trend") ||
+      t.includes("quality") || t.includes("over time") || t.includes("improving") ||
+      t.includes("degrading") || t.includes("signal"))
     return { tool: "get_signal_quality_trend", args: { days: 30 }, label: "Signal Quality Trend (30d)" };
-  if (t.includes("batch") || t.includes("landed") || t.includes("restatement") || t.includes("upload") || t.includes("adjustment"))
+
+  // Relay health — GCLID attach, EC only, health status
+  if (t.includes("health") || t.includes("attach") || t.includes("ec only") ||
+      t.includes("ec-only") || t.includes("gclid rate") || t.includes("needs_review") ||
+      t.includes("relay status") || t.includes("how is relay"))
+    return { tool: "get_relay_health", args: { days: 7 }, label: "Relay Health (7d)" };
+
+  // Reconciliation — relay vs gads diff
+  if (t.includes("reconcil") || t.includes("vs gads") || t.includes("vs google") ||
+      t.includes("match") || t.includes("gap") || t.includes("relay ahead") ||
+      t.includes("gads ahead") || t.includes("difference"))
+    return { tool: "reconcile_relay_vs_gads", args: { startDate: weekAgo, endDate: today }, label: "Relay vs GAds (7d)" };
+
+  // Coverage — source breakdown, blind spots, skips
+  if (t.includes("coverage") || t.includes("source") || t.includes("hole") ||
+      t.includes("blind") || t.includes("skip") || t.includes("whatsapp") ||
+      t.includes("walk-in") || t.includes("phone") || t.includes("losing"))
+    return { tool: "get_coverage_by_source", args: { days: 7 }, label: "Coverage by Source" };
+
+  // Batch / restatement uploads
+  if (t.includes("batch") || t.includes("landed") || t.includes("restatement") ||
+      t.includes("upload") || t.includes("adjustment") || t.includes("partial_fail"))
     return { tool: "verify_batch_landed", args: { lastN: 5 }, label: "Batch Verification" };
+
+  // Default for broad questions — fetch relay health as baseline context
+  if (t.includes("what") || t.includes("how") || t.includes("show") || t.includes("tell") ||
+      t.includes("status") || t.includes("summary") || t.includes("overview"))
+    return { tool: "get_relay_health", args: { days: 7 }, label: "Relay Health (7d)" };
+
   return null;
 }
 
