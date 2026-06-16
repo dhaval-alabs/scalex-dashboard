@@ -32,7 +32,7 @@ async function callGadsMCP(tool: string, args: Record<string, unknown> = {}): Pr
   };
   const resp = await fetch(MCP_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "Accept": "application/json, text/event-stream" },
     body: JSON.stringify(body),
   });
   if (!resp.ok) throw new Error(`GAds MCP error: ${resp.status}`);
@@ -56,7 +56,7 @@ async function callReconMCP(tool: string, args: Record<string, unknown> = {}): P
   };
   const resp = await fetch(MCP_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "Accept": "application/json, text/event-stream" },
     body: JSON.stringify(body),
   });
   if (!resp.ok) throw new Error(`Recon MCP error: ${resp.status}`);
