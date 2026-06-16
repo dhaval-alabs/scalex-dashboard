@@ -1,59 +1,53 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { callReconMCP } from "@/lib/recon";
+import { fetchGadsStats } from "@/lib/gads";
 import { PageHeader } from "@/components/ui";
 
 interface Msg { role: "user" | "assistant"; content: string; isLoading?: boolean; data?: any; tool?: string; }
 
+// Routes to Recon MCP tools (relay pipeline data)
 function routeToTool(q: string): { tool: string; args: Record<string, unknown>; label: string } | null {
   const t = q.toLowerCase();
   const today = new Date().toISOString().slice(0, 10);
   const weekAgo = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
-
-  // Signal quality / trend — CPL trend, week over week, improving, degrading
-  if (t.includes("cpl") || t.includes("cost per lead") || t.includes("week over week") ||
-      t.includes("week on week") || t.includes("wow") || t.includes("trend") ||
-      t.includes("quality") || t.includes("over time") || t.includes("improving") ||
-      t.includes("degrading") || t.includes("signal"))
-    return { tool: "get_signal_quality_trend", args: { days: 30 }, label: "Signal Quality Trend (30d)" };
-
-  // Relay health — GCLID attach, EC only, health status
   if (t.includes("health") || t.includes("attach") || t.includes("ec only") ||
       t.includes("ec-only") || t.includes("gclid rate") || t.includes("needs_review") ||
-      t.includes("relay status") || t.includes("how is relay"))
+      t.includes("relay status") || t.includes("how is relay") || t.includes("signal quality"))
     return { tool: "get_relay_health", args: { days: 7 }, label: "Relay Health (7d)" };
-
-  // Reconciliation — relay vs gads diff
   if (t.includes("reconcil") || t.includes("vs gads") || t.includes("vs google") ||
-      t.includes("match") || t.includes("gap") || t.includes("relay ahead") ||
-      t.includes("gads ahead") || t.includes("difference"))
+      t.includes("match") || t.includes("gap") || t.includes("relay ahead") || t.includes("difference"))
     return { tool: "reconcile_relay_vs_gads", args: { startDate: weekAgo, endDate: today }, label: "Relay vs GAds (7d)" };
-
-  // Coverage — source breakdown, blind spots, skips
   if (t.includes("coverage") || t.includes("source") || t.includes("hole") ||
       t.includes("blind") || t.includes("skip") || t.includes("whatsapp") ||
-      t.includes("walk-in") || t.includes("phone") || t.includes("losing"))
+      t.includes("walk-in") || t.includes("losing"))
     return { tool: "get_coverage_by_source", args: { days: 7 }, label: "Coverage by Source" };
-
-  // Batch / restatement uploads
+  if (t.includes("trend") || t.includes("over time") || t.includes("improving") || t.includes("degrading"))
+    return { tool: "get_signal_quality_trend", args: { days: 30 }, label: "Signal Quality Trend (30d)" };
   if (t.includes("batch") || t.includes("landed") || t.includes("restatement") ||
       t.includes("upload") || t.includes("adjustment") || t.includes("partial_fail"))
     return { tool: "verify_batch_landed", args: { lastN: 5 }, label: "Batch Verification" };
-
-  // Default for broad questions — fetch relay health as baseline context
-  if (t.includes("what") || t.includes("how") || t.includes("show") || t.includes("tell") ||
-      t.includes("status") || t.includes("summary") || t.includes("overview"))
-    return { tool: "get_relay_health", args: { days: 7 }, label: "Relay Health (7d)" };
-
   return null;
+}
+
+// Routes to Google Ads data (campaign performance, spend, CPL)
+function isGadsQuestion(q: string): boolean {
+  const t = q.toLowerCase();
+  return t.includes("campaign") || t.includes("spend") || t.includes("cpl") ||
+         t.includes("cost per lead") || t.includes("roas") || t.includes("conversion") ||
+         t.includes("click") || t.includes("impression") || t.includes("budget") ||
+         t.includes("performing") || t.includes("performance") || t.includes("week over week") ||
+         t.includes("week on week") || t.includes("wow") || t.includes("how many") ||
+         t.includes("best campaign") || t.includes("worst campaign") || t.includes("top campaign") ||
+         t.includes("google ads") || t.includes("adwords") || t.includes("which campaign");
 }
 
 const QUICK = [
   "What's the relay health right now?",
-  "Reconcile relay vs Google Ads this week",
+  "How many campaigns are running and which performs best?",
+  "What's my CPL this month?",
   "Show me coverage by source",
   "Is signal quality improving over time?",
-  "Did the latest restatement batches land?",
   "Where are we losing GCLID coverage?",
 ];
 
@@ -160,14 +154,36 @@ export default function AskAiPage() {
       let toolData: any = null;
       let toolName = "";
 
-      if (route) {
+      // Fetch GAds data if it's a campaign/spend/CPL question
+      if (isGadsQuestion(question)) {
         try {
-          toolData = await callReconMCP(route.tool, route.args);
-          toolName = route.tool;
-          finalContent = `${question}\n\n[LIVE DATA — ${route.label}]\n${JSON.stringify(toolData, null, 2)}`;
+          const gadsData = await fetchGadsStats(30);
+          toolData = gadsData;
+          toolName = "gads_stats";
+          finalContent = `${question}\n\n[LIVE GOOGLE ADS DATA — Last 30 days]\n${JSON.stringify(gadsData, null, 2)}`;
+        } catch (e: any) {
+          finalContent = `${question}\n\n[Could not fetch Google Ads data: ${e.message}]`;
+        }
+      }
+
+      // Also fetch relay data if there's a matching Recon tool (can combine both)
+      if (route && !isGadsQuestion(question)) {
+        try {
+          const relayData = await callReconMCP(route.tool, route.args);
+          if (!toolData) { toolData = relayData; toolName = route.tool; }
+          finalContent = `${question}\n\n[LIVE DATA — ${route.label}]\n${JSON.stringify(relayData, null, 2)}`;
         } catch (e: any) {
           finalContent = `${question}\n\n[Could not fetch ${route.label}: ${e.message}]`;
         }
+      }
+
+      // Default fallback — fetch relay health for broad/overview questions
+      if (!toolData && !finalContent.includes("LIVE")) {
+        try {
+          const health = await callReconMCP("get_relay_health", { days: 7 });
+          toolData = health; toolName = "get_relay_health";
+          finalContent = `${question}\n\n[LIVE DATA — Relay Health (7d)]\n${JSON.stringify(health, null, 2)}`;
+        } catch { /* silent */ }
       }
 
       const history = [...msgs, userMsg].map((m) => ({
