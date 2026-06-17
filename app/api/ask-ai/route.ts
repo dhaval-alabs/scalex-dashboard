@@ -80,7 +80,10 @@ async function callGA4MCP(tool: string, args: Record<string, unknown> = {}): Pro
     body: JSON.stringify(body),
   });
   if (!resp.ok) throw new Error(`GA4 MCP error: ${resp.status}`);
-  const data = await resp.json();
+  const rawText = await resp.text();
+  // SSE format: "event: message\ndata: {...}\n\n"
+  const dataLine = rawText.split("\n").find((l: string) => l.startsWith("data: "));
+  const data = dataLine ? JSON.parse(dataLine.slice(6)) : JSON.parse(rawText);
   if (data.error) throw new Error(data.error.message || "GA4 MCP error");
   const resultContent = data.result?.content;
   if (Array.isArray(resultContent)) {
