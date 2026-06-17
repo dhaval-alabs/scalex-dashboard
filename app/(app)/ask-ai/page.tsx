@@ -11,7 +11,8 @@ const QUICK = [
   "Show me coverage by source",
   "Which keywords are wasting budget?",
   "Is signal quality improving over time?",
-  "Reconcile relay vs Google Ads this week",
+  "What are my top pages this month?",
+  "Show me traffic by channel",
   "What's my budget pacing today?",
 ];
 
@@ -110,8 +111,8 @@ export default function AskAiPage() {
             Meta Ads (not connected)
           </span>
           <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--text4)", display: "inline-block" }} />
-            GA4 (not connected)
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--green)", display: "inline-block" }} />
+            GA4 live
           </span>
         </div>
         {remaining !== null && <span style={{ fontFamily: "var(--mono)", fontSize: "0.68rem", opacity: 0.8 }}>{remaining} requests left this hour</span>}
@@ -164,7 +165,7 @@ export default function AskAiPage() {
           <input ref={inputRef} value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ask(input); } }}
-            placeholder="Ask about campaigns, CPL, keywords, relay health, budget pacing…"
+            placeholder="Ask about campaigns, CPL, website traffic, relay health, keywords…"
             disabled={busy}
             style={{ flex: 1, padding: "0.75rem 1rem", background: "var(--surface)", border: "1px solid var(--border2)", borderRadius: "var(--radius2)", color: "var(--text)", fontFamily: "var(--font)", fontSize: "0.88rem", outline: "none" }}
           />
