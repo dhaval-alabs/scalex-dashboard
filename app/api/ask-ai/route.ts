@@ -70,6 +70,26 @@ async function callReconMCP(tool: string, args: Record<string, unknown> = {}): P
   return data.result;
 }
 
+// ── Call GA4 + GSC MCP server-side ───────────────────────────
+async function callGA4MCP(tool: string, args: Record<string, unknown> = {}): Promise<any> {
+  const MCP_URL = "https://alabs-gsc-ga-mcp.vercel.app/api/mcp";
+  const body = { jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: tool, arguments: args } };
+  const resp = await fetch(MCP_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Accept": "application/json, text/event-stream" },
+    body: JSON.stringify(body),
+  });
+  if (!resp.ok) throw new Error(`GA4 MCP error: ${resp.status}`);
+  const data = await resp.json();
+  if (data.error) throw new Error(data.error.message || "GA4 MCP error");
+  const resultContent = data.result?.content;
+  if (Array.isArray(resultContent)) {
+    const text = resultContent.find((c: any) => c.type === "text");
+    try { return JSON.parse(text?.text || "{}"); } catch { return text?.text || data.result; }
+  }
+  return data.result;
+}
+
 // ── Smart context builder — fetch the right data for the question ──
 async function buildContext(userMessage: string, conversationHasData: boolean): Promise<string> {
   const t = userMessage.toLowerCase();
@@ -106,6 +126,34 @@ async function buildContext(userMessage: string, conversationHasData: boolean): 
       const terms = await callGadsMCP("get_search_terms", { days: 30, limit: 30 });
       blocks.push(`[GOOGLE ADS — Search Terms (30d)]\n${JSON.stringify(terms, null, 2)}`);
     } catch (e: any) { blocks.push(`[GOOGLE ADS — Keywords: unavailable (${e.message})]`); }
+  }
+
+  // GA4 — website traffic, top pages, channel breakdown
+  if (t.includes("traffic") || t.includes("website") || t.includes("page") ||
+      t.includes("visitor") || t.includes("session") || t.includes("organic") ||
+      t.includes("bounce") || t.includes("channel") || t.includes("seo") ||
+      t.includes("top page") || t.includes("landing page") || t.includes("realtime")) {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const thirtyAgo = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
+      const [pages, channels] = await Promise.all([
+        callGA4MCP("ga4_get_top_pages", { startDate: thirtyAgo, endDate: today, propertyId: "342720890", limit: 10 }),
+        callGA4MCP("ga4_get_channel_breakdown", { startDate: thirtyAgo, endDate: today, propertyId: "342720890" }),
+      ]);
+      blocks.push(`[GA4 — Top Pages (30d)]
+${JSON.stringify(pages, null, 2)}`);
+      blocks.push(`[GA4 — Channel Breakdown (30d)]
+${JSON.stringify(channels, null, 2)}`);
+    } catch (e: any) { blocks.push(`[GA4 — unavailable (${e.message})]`); }
+  }
+
+  // GA4 — realtime users
+  if (t.includes("realtime") || t.includes("real time") || t.includes("live user") || t.includes("right now") || t.includes("active user")) {
+    try {
+      const rt = await callGA4MCP("ga4_get_realtime", { propertyId: "342720890" });
+      blocks.push(`[GA4 — Realtime]
+${JSON.stringify(rt, null, 2)}`);
+    } catch (e: any) { blocks.push(`[GA4 — Realtime: unavailable (${e.message})]`); }
   }
 
   // Relay health
@@ -184,7 +232,8 @@ Key context:
 - RELAY_AHEAD in reconciliation = normal (relay uploads before Google attributes). Not an incident
 - Skip rate ~62-72% = expected (non-PPC sources excluded by design)
 - PARTIAL_FAIL [LEGACY] = benign expired GCLIDs. Not a new problem
-- GA4 and Meta Ads data are not currently available in this assistant
+- GA4 website data IS available: sessions, top pages, channel breakdown (Organic/Paid/Direct), bounce rate, realtime users
+- Meta Ads data is NOT currently available
 - CPA shown in Google Ads = cost per conversion action (includes all Primary actions). True CPL = spend ÷ qualified leads
 
 When answering executives:
