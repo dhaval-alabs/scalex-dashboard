@@ -1,6 +1,6 @@
 "use client";
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { fetchRelayRows, RelayRow } from "@/lib/sheets";
+import { fetchRelayData, RelayRow, BatchRow } from "@/lib/sheets";
 import { fetchGadsStats, GadsStats } from "@/lib/gads";
 
 export type RangeValue = "today" | "yesterday" | "7" | "30" | "90" | "this_month";
@@ -43,6 +43,7 @@ interface AppState {
   theme: "light" | "dark";
   toggleTheme: () => void;
   relayRows: RelayRow[];
+  batchRows: BatchRow[];   // day-5 sweeps — was never fetched before
   gads: GadsStats | null;
   loading: boolean;
   error: string | null;
@@ -56,6 +57,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [range, setRange] = useState<RangeValue>("30");
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [relayRows, setRelayRows] = useState<RelayRow[]>([]);
+  const [batchRows, setBatchRows] = useState<BatchRow[]>([]);
   const [gads, setGads] = useState<GadsStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -83,8 +85,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const loadAll = useCallback(async (r: RangeValue) => {
     setLoading(true); setError(null);
     try {
-      const [rows] = await Promise.allSettled([fetchRelayRows(), loadGads(r)]);
-      if (rows.status === "fulfilled") setRelayRows(rows.value);
+      const [relay] = await Promise.allSettled([fetchRelayData(), loadGads(r)]);
+      if (relay.status === "fulfilled") {
+        setRelayRows(relay.value.rows);
+        setBatchRows(relay.value.batch);
+      } else {
+        // Surface it. The old published-CSV path returned a sign-in page that
+        // parsed into garbage rows, so a broken data path looked like an empty
+        // dashboard instead of a fault.
+        setError((relay.reason as any)?.message || "Relay data load failed");
+      }
       setLastUpdated(new Date().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }));
     } catch (e: any) {
       setError(e.message || "Load failed");
@@ -106,7 +116,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <Ctx.Provider value={{
       range, setRange: onSetRange, rangeLabel: rangeLabel(range),
       theme, toggleTheme: () => setTheme((t) => (t === "dark" ? "light" : "dark")),
-      relayRows, gads, loading, error, lastUpdated,
+      relayRows, batchRows, gads, loading, error, lastUpdated,
       refresh: () => loadAll(range),
     }}>
       {children}

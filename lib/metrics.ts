@@ -1,7 +1,7 @@
 // lib/metrics.ts — single source of truth for relay-derived metrics.
 // All pages compute from these helpers so numbers never diverge between widgets.
 
-import { RelayRow } from "./sheets";
+import { RelayRow, BatchRow } from "./sheets";
 
 export interface RelaySummary {
   total: number;
@@ -9,33 +9,116 @@ export interface RelaySummary {
   ecOnly: number;
   failed: number;
   skipped: number;
+  waiting: number;         // A5_* states: deliberately held, NOT failures
+  other: number;           // statuses matching no bucket at all
   gclidAttached: number;   // rows that reached GAds with a real gclid
   ecOnlyReached: number;   // rows that reached GAds via EC only
   reached: number;         // success + ecOnly (uploaded to GAds)
   gclidAttachRate: number; // gclid / reached
   ecOnlyRate: number;      // ecOnly / reached
+  attachRateReliable: boolean; // false when `reached` is too small to quote
   byConv: Record<string, number>;
+  byStatus: Record<string, number>;
 }
 
+// Minimum `reached` before the attach rate is worth showing as a number.
+// Mirrors the guard get_signal_quality_trend already applies to trend
+// direction. Measured on live data the attach rate read 31.3%, 54.4%, 64.3%
+// and 41.7% across four windows on bases of 502, 125, 14 and 12 rows — the
+// swing was sample size, not signal. Anything under this shows as "—".
+export const ATTACH_RATE_MIN_BASE = 30;
+
 export function summarize(rows: RelayRow[]): RelaySummary {
-  let success = 0, ecOnly = 0, failed = 0, skipped = 0;
+  let success = 0, ecOnly = 0, failed = 0, skipped = 0, waiting = 0, other = 0;
   const byConv: Record<string, number> = {};
+  const byStatus: Record<string, number> = {};
+
   for (const r of rows) {
     const s = r.status;
+    byStatus[s] = (byStatus[s] || 0) + 1;
+
     if (s === "SUCCESS") success++;
     else if (s === "SUCCESS_EC_ONLY") ecOnly++;
     else if (s.includes("FAIL")) failed++;
     else if (s.startsWith("SKIP")) skipped++;
+    // A5 architecture waiting states. These are NOT failures and NOT skips —
+    // the first push is deliberately held five days and swept by
+    // runDay5Push(). Previously they matched no branch at all, so `total` and
+    // the sum of the buckets disagreed by 3,443 of 38,239 rows and the
+    // difference silently vanished from every widget.
+    else if (s.startsWith("A5_")) waiting++;
+    // NO_GCLID, HTTP_503 and anything new the relay starts emitting. Counted
+    // rather than dropped, so a new status can never disappear again.
+    else other++;
+
     if (r.convId) byConv[r.convId] = (byConv[r.convId] || 0) + 1;
   }
+
   const reached = success + ecOnly;
   return {
-    total: rows.length, success, ecOnly, failed, skipped,
+    total: rows.length, success, ecOnly, failed, skipped, waiting, other,
     gclidAttached: success, ecOnlyReached: ecOnly, reached,
     gclidAttachRate: reached ? success / reached : 0,
     ecOnlyRate: reached ? ecOnly / reached : 0,
-    byConv,
+    attachRateReliable: reached >= ATTACH_RATE_MIN_BASE,
+    byConv, byStatus,
   };
+}
+
+// ── DAY-5 DELIVERY ───────────────────────────────────────────────────────────
+//
+// The number the dashboard was missing entirely.
+//
+// runDay5Push() writes its outcomes to BatchLog and Firestore, never to the
+// Log tab. BATCHLOG_URL was declared in lib/sheets.ts and never fetched, so
+// every metric on every page was computed from the Log tab alone — which
+// excludes the day-5 sweep, the larger share of what the relay actually
+// delivers to Google Ads. The dashboard was understating our own delivery to
+// the client.
+//
+// `dropped` is terminal-only as of relay v10.9.11: leads whose click window
+// expired. Not a failure of ours, but a real loss, so it is reported
+// separately rather than folded into either success or failure.
+export interface Day5Summary {
+  runs: number;
+  pushed: number;
+  dropped: number;
+  failed: number;
+  delivered: number;      // pushed, i.e. accepted by the Google Ads API
+  errorRate: number;      // failed / (pushed + failed)
+  dropRate: number;       // dropped / (pushed + dropped + failed)
+  lastRun: string;
+}
+
+export function day5Summary(batch: BatchRow[]): Day5Summary {
+  let runs = 0, pushed = 0, dropped = 0, failed = 0;
+  let lastRun = "";
+  for (const b of batch) {
+    // Day-5 rows only. Legacy forward-upgrade runs share this tab and
+    // double-count if not filtered — the same guard the recon MCP applies.
+    if (!b.isDay5) continue;
+    runs++;
+    pushed  += b.processed;
+    dropped += b.dropped;
+    failed  += b.failed;
+    if (!lastRun || b.timestamp > lastRun) lastRun = b.timestamp;
+  }
+  const attempted = pushed + failed;
+  return {
+    runs, pushed, dropped, failed, delivered: pushed,
+    errorRate: attempted ? failed / attempted : 0,
+    dropRate: (pushed + dropped + failed) ? dropped / (pushed + dropped + failed) : 0,
+    lastRun,
+  };
+}
+
+// Total delivery to Google Ads: forward upgrades (Log tab) PLUS the day-5
+// sweep (BatchLog). Use this anywhere the client is shown "conversions
+// delivered" — the Log tab alone is less than the full picture.
+export function totalDelivered(sum: RelaySummary, d5: Day5Summary): {
+  forward: number; day5: number; total: number;
+} {
+  return { forward: sum.reached, day5: d5.delivered, total: sum.reached + d5.delivered };
 }
 
 // EC Recovery daily series: % of reached conversions that were EC-only
@@ -76,11 +159,15 @@ export function skipBreakdown(rows: RelayRow[]): { reason: string; count: number
   const reasons: Record<string, number> = {};
   for (const r of rows) {
     if (!r.status.startsWith("SKIP")) continue;
+    // Reads r.message, which now actually IS the Message column. It was being
+    // read from index 17 (Hashed Email), so this regex ran against a SHA-256
+    // hash, never matched, and every skip collapsed to "Other".
     let reason = "Other";
     const m = r.message.match(/Non-PPC source:\s*"([^"]*)"/);
     if (m) reason = `Non-PPC: ${m[1] || "(blank)"}`;
-    else if (r.message.includes("inactive")) reason = "Drop stage (inactive)";
     else if (r.status === "SKIP_DROP_STAGE") reason = "Drop stage";
+    else if (r.message.toLowerCase().includes("inactive")) reason = "Drop stage (inactive)";
+    else if (r.message) reason = r.message.slice(0, 60);
     reasons[reason] = (reasons[reason] || 0) + 1;
   }
   return Object.entries(reasons).map(([reason, count]) => ({ reason, count })).sort((a, b) => b.count - a.count);
