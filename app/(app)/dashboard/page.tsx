@@ -2,17 +2,23 @@
 import { useMemo } from "react";
 import { useApp } from "@/context/AppContext";
 import { filterByPeriod } from "@/lib/sheets";
-import { summarize, ecRecoveryDaily, biddingMaturity, coverageBySource } from "@/lib/metrics";
+import { summarize, ecRecoveryDaily, biddingMaturity, coverageBySource, day5Summary, totalDelivered, ladderValue } from "@/lib/metrics";
 import { PageHeader, Card, Kpi } from "@/components/ui";
 import { AreaTrend, LineTrend, BarSeries } from "@/components/charts";
 
 export default function DashboardPage() {
-  const { range, rangeLabel, relayRows, gads, loading } = useApp();
+  const { range, rangeLabel, relayRows, batchRows, gads, loading } = useApp();
   const rows    = useMemo(() => filterByPeriod(relayRows, range), [relayRows, range]);
+  // Day-5 sweeps live in BatchLog, not the Log tab. Without this the delivery
+  // figures below count only forward upgrades and understate what we send.
+  const batch   = useMemo(() => filterByPeriod(batchRows, range), [batchRows, range]);
+  const d5      = useMemo(() => day5Summary(batch), [batch]);
   const s       = useMemo(() => summarize(rows), [rows]);
   const ecDaily = useMemo(() => ecRecoveryDaily(rows), [rows]);
   const maturity = useMemo(() => biddingMaturity(rows), [rows]);
   const coverage = useMemo(() => coverageBySource(rows), [rows]);
+  const ladder   = useMemo(() => ladderValue(s), [s]);
+  const delivery = useMemo(() => totalDelivered(s, d5), [s, d5]);
 
   const weeklyCpl = useMemo(
     () => (gads?.weekly_cpl || []).map((v, i) => ({ week: "W" + (i + 1), cpl: v })).filter((d) => d.cpl != null),
@@ -43,8 +49,8 @@ export default function DashboardPage() {
         <Kpi label="Total Conversions" value={gads ? gads.total_conversions.toLocaleString() : "—"} foot={`${gads?.total_clicks?.toLocaleString() || "—"} clicks · ${rangeLabel}`} accent="var(--teal)" />
         <Kpi label="Cost Per Lead" value={gads ? "₹" + gads.cpl : "—"} foot={gads?.prev_cpl ? `prev ₹${gads.prev_cpl}` : rangeLabel} accent="var(--green)" />
         <Kpi label="Ad Spend" value={gads ? "₹" + gads.total_spend_lakh + "L" : "—"} foot={`₹${gads?.total_spend?.toLocaleString() || "—"} total`} accent="var(--purple)" />
-        <Kpi label="CRM Conversions Sent" value={s.reached.toLocaleString()} foot={`${s.success} gclid · ${s.ecOnly} EC-only`} accent="var(--teal)" />
-        <Kpi label="GCLID Attach Rate" value={Math.round(s.gclidAttachRate * 100) + "%"} foot={`${s.success} of ${s.reached} with real click ID`} accent="var(--amber)" />
+        <Kpi label="CRM Conversions Sent" value={delivery.total.toLocaleString()} foot={`${delivery.forward.toLocaleString()} forward · ${delivery.day5.toLocaleString()} day-5 sweep`} accent="var(--teal)" />
+        <Kpi label="GCLID Attach Rate" value={s.attachRateReliable ? Math.round(s.gclidAttachRate * 100) + "%" : "—"} foot={s.attachRateReliable ? `${s.success} of ${s.reached} with real click ID` : `Base too small (${s.reached}) — needs 30+`} accent="var(--amber)" />
         <Kpi label="EC Only" value={Math.round(s.ecOnlyRate * 100) + "%"} foot={`${s.ecOnly} matched via hashed email/phone`} accent="var(--coral)" />
       </div>
 
@@ -69,12 +75,42 @@ export default function DashboardPage() {
             ? <BarSeries data={stageFlow} xKey="stage" yKey="count" color="var(--teal)" height={220} />
             : <div className="empty-msg">No stage data in range</div>}
         </Card>
-        <Card title="Smart Bidding — Value Ladder" sub="Proxy value uploaded per action (feeds tROAS)" dateLabel={rangeLabel} loading={loading}>
-          {maturity.length
-            ? <BarSeries data={maturity.map(m => ({ ...m, name: m.label }))} xKey="name" yKey="count" color="var(--purple)" horizontal height={220} />
-            : <div className="empty-msg">No conversion data in range</div>}
+        <Card title="Smart Bidding — Proxy Value Uploaded" sub="Count × ladder value — this is what feeds tROAS, not the counts beside it" dateLabel={rangeLabel} loading={loading}>
+          {ladder.length ? (
+            <>
+              <BarSeries data={ladder.map(r => ({ ...r, name: `${r.label} (₹${r.unitValue.toLocaleString()})` }))} xKey="name" yKey="totalValue" color="var(--purple)" horizontal height={220} />
+              <table className="tbl" style={{ fontSize: "0.75rem", marginTop: "0.5rem" }}>
+                <thead><tr><th>Action</th><th className="num">Count</th><th className="num">₹ each</th><th className="num">₹ total</th><th className="num">Share</th></tr></thead>
+                <tbody>
+                  {ladder.map((r) => (
+                    <tr key={r.key}>
+                      <td>{r.label}</td>
+                      <td className="num">{r.count.toLocaleString()}</td>
+                      <td className="num">₹{r.unitValue.toLocaleString()}</td>
+                      <td className="num">₹{r.totalValue.toLocaleString()}</td>
+                      <td className="num">{Math.round(r.shareOfValue * 100)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          ) : <div className="empty-msg">No conversion data in range</div>}
         </Card>
       </div>
+
+      {/* ── Row 2b: Day-5 sweep — previously invisible ── */}
+      <Card title="Day-5 Sweep — Delivery" sub="runDay5Push() writes to BatchLog, not the Log tab. This was excluded from every figure on this page until 7 Sep 2026." dateLabel={rangeLabel} loading={loading}>
+        {d5.runs ? (
+          <div className="kpi-grid">
+            <Kpi label="Day-5 Pushed" value={d5.pushed.toLocaleString()} foot={`${d5.runs} sweep${d5.runs === 1 ? "" : "s"} in range`} accent="var(--teal)" />
+            <Kpi label="Forward Upgrades" value={delivery.forward.toLocaleString()} foot="from the Log tab" accent="var(--purple)" />
+            <Kpi label="Total Delivered" value={delivery.total.toLocaleString()} foot="forward + day-5 · accepted by the GAds API" accent="var(--green)" />
+            <Kpi label="Failed" value={d5.failed.toLocaleString()} foot={`${(d5.errorRate * 100).toFixed(2)}% of attempted · retried next sweep`} accent="var(--coral)" />
+            <Kpi label="Dropped" value={d5.dropped.toLocaleString()} foot={`${(d5.dropRate * 100).toFixed(2)}% · click window expired (terminal)`} accent="var(--amber)" />
+            <Kpi label="Last Sweep" value={d5.lastRun ? d5.lastRun.split(" ")[0] : "—"} foot={d5.lastRun ? d5.lastRun.split(" ").slice(1).join(" ") + " · 3:40 AM IST daily" : "no sweep in range"} accent="var(--teal)" />
+          </div>
+        ) : <div className="empty-msg">No day-5 sweeps in range</div>}
+      </Card>
 
       {/* ── Row 3: Campaigns ── */}
       <Card title="All Campaigns — Performance" sub="Google Ads · sorted by spend · vs prior period" dateLabel={rangeLabel} loading={loading}>
@@ -152,8 +188,8 @@ export default function DashboardPage() {
             </div>
             <div style={{ padding: "0.6rem 0.75rem", background: "var(--surface2)", borderRadius: "var(--radius3)", borderLeft: "3px solid var(--amber)" }}>
               <div style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--amber)", fontWeight: 600 }}>Relay pipeline</div>
-              <div style={{ fontSize: "0.88rem", fontWeight: 600, marginTop: "0.2rem" }}>{s.total.toLocaleString()} total events · {s.skipped.toLocaleString()} skipped</div>
-              <div style={{ fontSize: "0.78rem", color: "var(--text3)" }}>Skip rate {s.total ? Math.round((s.skipped / s.total) * 100) : 0}% · expected (non-PPC exclusion)</div>
+              <div style={{ fontSize: "0.88rem", fontWeight: 600, marginTop: "0.2rem" }}>{s.total.toLocaleString()} events · {s.skipped.toLocaleString()} skipped · {s.waiting.toLocaleString()} waiting</div>
+              <div style={{ fontSize: "0.78rem", color: "var(--text3)" }}>Skip {s.total ? Math.round((s.skipped / s.total) * 100) : 0}% (non-PPC) · {s.waiting.toLocaleString()} held for day-5 sweep{s.other ? ` · ${s.other} other` : ""}</div>
             </div>
           </div>
         </Card>

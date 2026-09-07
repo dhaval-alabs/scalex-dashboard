@@ -65,6 +65,49 @@ export function summarize(rows: RelayRow[]): RelaySummary {
   };
 }
 
+// Proxy value actually uploaded per action = count x ladder value.
+//
+// The dashboard's "Value Ladder" card was plotting `count` under a title and
+// subtitle that both said VALUE ("Proxy value uploaded per action (feeds
+// tROAS)"), with rupee amounts in the axis labels. So Disqualified at 1 rupee
+// showed as the longest bar while Converted at 10,000 rupees showed as one of
+// the shortest — the exact inversion of what feeds tROAS. It was also
+// identical to the funnel chart beside it, because both were counts.
+//
+// This is the chart someone would use to reason about bid strategy, so the
+// inversion was the most actively misleading thing on the page.
+export const LADDER_VALUE: Record<string, number> = {
+  lead_submitted: 200,
+  signup: 500,
+  qualified: 2000,
+  converted: 10000,
+  disqualified: 1,
+};
+
+export interface LadderValueRow {
+  key: string;
+  label: string;
+  count: number;
+  unitValue: number;
+  totalValue: number;
+  shareOfValue: number;
+}
+
+export function ladderValue(sum: RelaySummary): LadderValueRow[] {
+  const labels: Record<string, string> = {
+    lead_submitted: "Lead Submitted", signup: "Signup",
+    qualified: "Qualified", converted: "Converted", disqualified: "Disqualified",
+  };
+  const rows = Object.keys(LADDER_VALUE).map((k) => {
+    const count = sum.byConv[k] || 0;
+    const unitValue = LADDER_VALUE[k];
+    return { key: k, label: labels[k] || k, count, unitValue, totalValue: count * unitValue, shareOfValue: 0 };
+  }).filter((r) => r.count > 0);
+  const grand = rows.reduce((a, r) => a + r.totalValue, 0);
+  for (const r of rows) r.shareOfValue = grand ? r.totalValue / grand : 0;
+  return rows.sort((a, b) => b.totalValue - a.totalValue);
+}
+
 // ── DAY-5 DELIVERY ───────────────────────────────────────────────────────────
 //
 // The number the dashboard was missing entirely.
