@@ -131,9 +131,52 @@ export function batchFromValues(values: string[][]): BatchRow[] {
     .filter((r) => r.timestamp);
 }
 
+
+// ── PPC SUBMISSION SHEET (NextJS tab) — the CPL denominator ──────────────────
+//
+// One row per form submission, written by the landing pages. Column indices
+// verified against the live header on 1 Sep 2026:
+//
+//   0 Timestamp (ISO)   5 Source Section & CTA   10 UTM Term    22 UTM Content
+//   1 Full Name         6 Master Source Filter   11 GCLID       23 Raw Source CTA
+//   2 Email             7 UTM Source             ...            24 ScaleX ID
+//   3 Phone             8 UTM Medium             16 OTP_Status  25 Click Timestamp
+//   4 City              9 UTM Campaign           17 Email Ver.  26 Click ID Source
+export interface PpcRow {
+  timestamp: string;   // ISO 8601, NOT the M/D/YYYY the relay log uses
+  email: string;
+  phone: string;
+  campaign: string;
+  gclid: string;
+  sclxId: string;
+  masterSource: string;
+}
+
+export function ppcFromValues(values: string[][]): PpcRow[] {
+  if (!values || values.length < 2) return [];
+  return values
+    .slice(1)
+    .map((c) => ({
+      timestamp:    String(c[0]  ?? ""),
+      email:        String(c[2]  ?? "").trim(),
+      phone:        String(c[3]  ?? "").trim(),
+      masterSource: String(c[6]  ?? "").trim(),
+      campaign:     String(c[9]  ?? "").trim(),
+      gclid:        String(c[11] ?? "").trim(),
+      sclxId:       String(c[24] ?? "").trim(),
+    }))
+    .filter((r) => r.timestamp && r.email);
+}
+
+// PPC sheet timestamps are ISO; the relay log's are M/D/YYYY. filterByPeriod
+// calls parseTs, which handles both — ISO falls through to new Date(). Kept
+// explicit so the difference is not rediscovered later.
+
 export interface RelayData {
   rows: RelayRow[];
   batch: BatchRow[];
+  ppc: PpcRow[];
+  ppcError: string | null;
   fetchedAt: string;
 }
 
@@ -152,6 +195,8 @@ export async function fetchRelayData(): Promise<RelayData> {
   return {
     rows:      rowsFromValues(json.data.log),
     batch:     batchFromValues(json.data.batch),
+    ppc:       ppcFromValues(json.data.ppc || []),
+    ppcError:  json.data.ppcError ?? null,
     fetchedAt: json.data.fetched_at || new Date().toISOString(),
   };
 }

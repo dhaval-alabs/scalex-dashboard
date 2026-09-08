@@ -1,7 +1,7 @@
 // lib/metrics.ts — single source of truth for relay-derived metrics.
 // All pages compute from these helpers so numbers never diverge between widgets.
 
-import { RelayRow, BatchRow } from "./sheets";
+import { RelayRow, BatchRow, PpcRow } from "./sheets";
 
 export interface RelaySummary {
   total: number;
@@ -106,6 +106,130 @@ export function ladderValue(sum: RelaySummary): LadderValueRow[] {
   const grand = rows.reduce((a, r) => a + r.totalValue, 0);
   for (const r of rows) r.shareOfValue = grand ? r.totalValue / grand : 0;
   return rows.sort((a, b) => b.totalValue - a.totalValue);
+}
+
+
+// ── CPL AND COST PER UNIQUE LEAD ─────────────────────────────────────────────
+//
+// Definitions settled with Sumeet, 8 Sep 2026. TWO metrics, not one, because
+// they answer different questions and differ by roughly 20-25%:
+//
+//   CPL                  cost per PAID CLICK that produced a lead.
+//                        Denominator: submissions, deduped only for TECHNICAL
+//                        duplicates. One person who clicked two different ads
+//                        and submitted twice counts TWICE — those are two paid
+//                        clicks that each produced a lead.
+//
+//   Cost per Unique Lead cost per PERSON acquired.
+//                        Denominator: distinct emails. That same person counts
+//                        once.
+//
+// Blank GCLIDs are IN the denominator. Attribution runs on UTM and landing
+// page, not click ID — a blank click ID does not mean the lead was unpaid, and
+// someone who taps the call button never has one. Critically, blank-GCLID rows
+// are never deduped AGAINST EACH OTHER: two blank rows for the same person are
+// two submissions, and collapsing them on an email+GCLID key would
+// under-count. That is why CPL dedupes on a technical-duplicate rule rather
+// than on email+GCLID.
+//
+// NO JUNK FILTER, by decision. A junk submission still consumed spend, so
+// excluding it would flatter the figure. Quality — junk, dead, RNR — is the
+// client's judgement, not the product's.
+//
+// TECHNICAL DUPLICATE = same email AND same GCLID within 120 seconds. That is
+// the signature of the pre-27-Aug OTP-resend bug, which appended the same lead
+// several times in the same second (one lead produced 8 rows on 22 Aug; two
+// rows 87ms apart on 26 Aug). Genuine resubmissions are minutes apart with the
+// name often retyped, and those are real repeat clicks. 120s is deliberately
+// generous: a false merge under-counts CPL, which is the conservative
+// direction.
+const TECHNICAL_DUP_WINDOW_MS = 120 * 1000;
+
+// Brand vs non-brand. Brand search captures existing demand; non-brand
+// generates it. Blending them flatters CPL, which is why Sumeet asked for the
+// split rather than one number.
+export function isBrandCampaign(name: string): boolean {
+  return /brand/i.test(name || "");
+}
+
+export interface CplSegment {
+  label: string;
+  spend: number;
+  submissions: number;      // CPL denominator
+  uniqueLeads: number;      // Cost per Unique Lead denominator
+  technicalDupsRemoved: number;
+  blankGclid: number;
+  cpl: number | null;
+  cpul: number | null;
+}
+
+function dedupeTechnical(rows: PpcRow[]): { kept: PpcRow[]; removed: number } {
+  // Sort by email+gclid then time, so near-duplicates are adjacent.
+  const sorted = [...rows].sort((a, b) => {
+    const ka = a.email.toLowerCase() + "|" + a.gclid;
+    const kb = b.email.toLowerCase() + "|" + b.gclid;
+    if (ka !== kb) return ka < kb ? -1 : 1;
+    return (new Date(a.timestamp).getTime() || 0) - (new Date(b.timestamp).getTime() || 0);
+  });
+  const kept: PpcRow[] = [];
+  let removed = 0;
+  for (const r of sorted) {
+    const prev = kept[kept.length - 1];
+    const sameKey =
+      prev &&
+      prev.email.toLowerCase() === r.email.toLowerCase() &&
+      prev.gclid === r.gclid &&
+      // A blank GCLID is NOT a key. Two blank rows for one person are two
+      // submissions, never a technical duplicate.
+      r.gclid !== "";
+    if (sameKey) {
+      const dt = Math.abs((new Date(r.timestamp).getTime() || 0) - (new Date(prev.timestamp).getTime() || 0));
+      if (dt <= TECHNICAL_DUP_WINDOW_MS) { removed++; continue; }
+    }
+    kept.push(r);
+  }
+  return { kept, removed };
+}
+
+function segment(label: string, rows: PpcRow[], spend: number): CplSegment {
+  const { kept, removed } = dedupeTechnical(rows);
+  const uniqueEmails = new Set(kept.map((r) => r.email.toLowerCase()));
+  const blankGclid = kept.filter((r) => !r.gclid).length;
+  return {
+    label, spend,
+    submissions: kept.length,
+    uniqueLeads: uniqueEmails.size,
+    technicalDupsRemoved: removed,
+    blankGclid,
+    cpl:  kept.length ? spend / kept.length : null,
+    cpul: uniqueEmails.size ? spend / uniqueEmails.size : null,
+  };
+}
+
+export interface CplBreakdown {
+  brand: CplSegment;
+  nonBrand: CplSegment;
+  blended: CplSegment;
+  unmatchedCampaign: number;  // submissions with no UTM campaign at all
+}
+
+// campaignSpend: campaign name -> spend, from the Google Ads API.
+export function cplBreakdown(ppc: PpcRow[], campaignSpend: Record<string, number>): CplBreakdown {
+  let brandSpend = 0, nonBrandSpend = 0;
+  for (const [name, spend] of Object.entries(campaignSpend)) {
+    if (isBrandCampaign(name)) brandSpend += spend; else nonBrandSpend += spend;
+  }
+  const brandRows    = ppc.filter((r) => r.campaign && isBrandCampaign(r.campaign));
+  const nonBrandRows = ppc.filter((r) => r.campaign && !isBrandCampaign(r.campaign));
+  // Submissions carrying no UTM campaign at all. Reported, not silently
+  // dropped into one side or the other — they would bias whichever got them.
+  const unmatched = ppc.filter((r) => !r.campaign).length;
+  return {
+    brand:    segment("Brand", brandRows, brandSpend),
+    nonBrand: segment("Non-brand", nonBrandRows, nonBrandSpend),
+    blended:  segment("Blended", ppc.filter((r) => r.campaign), brandSpend + nonBrandSpend),
+    unmatchedCampaign: unmatched,
+  };
 }
 
 // ── DAY-5 DELIVERY ───────────────────────────────────────────────────────────

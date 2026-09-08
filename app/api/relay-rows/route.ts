@@ -41,6 +41,17 @@ const SPREADSHEET_ID = "1U3q09dNFDF-67mrJO-gqEbsKby4ylr-AF631w8zneDc";
 const LOG_TAB = "Log";
 const BATCHLOG_TAB = "BatchLog";
 
+// The PPC submission sheet — one row per form submission, written by the
+// landing pages. This is the CPL denominator source.
+//
+// Why not the relay Log tab: that is a log of stage-change EVENTS, several rows
+// per lead, with Campaign populated from the LSQ webhook. Deriving submissions
+// back out of stage events is how you end up with a figure that agrees with
+// nothing. The PPC sheet is already one row per submission, which is exactly
+// the shape Sumeet's CPL definition asks for.
+const PPC_SPREADSHEET_ID = "1mLxadboR2oQO1CNi3ExpsoK-fNTmm9EFcvLh9yTZLqE";
+const PPC_TAB = "NextJS";
+
 // ── Service-account access token (JWT bearer flow) ────────────────────────────
 // Scoped to spreadsheets.readonly. Narrower than the sheets scope the relay
 // uses, because this route only ever reads.
@@ -90,9 +101,9 @@ async function getSheetsToken(): Promise<string> {
   return json.access_token as string;
 }
 
-async function readRange(token: string, range: string): Promise<string[][]> {
+async function readRange(token: string, range: string, spreadsheetId = SPREADSHEET_ID): Promise<string[][]> {
   const url =
-    `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}` +
+    `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}` +
     `/values/${encodeURIComponent(range)}?valueRenderOption=UNFORMATTED_VALUE` +
     `&dateTimeRenderOption=FORMATTED_STRING`;
   const resp = await fetch(url, {
@@ -118,9 +129,16 @@ export async function GET() {
 
     // Both tabs, in parallel. Column letters, not open-ended ranges, so a
     // trailing empty column in the sheet cannot shift the indices.
-    const [logValues, batchValues] = await Promise.all([
+    // Three reads in parallel. PPC is allowed to fail on its own without
+    // taking the relay figures down with it — it is a newer dependency and the
+    // rest of the dashboard does not need it.
+    const [logValues, batchValues, ppcResult] = await Promise.all([
       readRange(token, `${LOG_TAB}!A:U`),
       readRange(token, `${BATCHLOG_TAB}!A:F`),
+      readRange(token, `${PPC_TAB}!A:AA`, PPC_SPREADSHEET_ID).then(
+        (v) => ({ ok: true as const, v }),
+        (e) => ({ ok: false as const, err: String(e?.message || e) })
+      ),
     ]);
 
     return NextResponse.json({
@@ -129,8 +147,11 @@ export async function GET() {
         // Row 0 is the header in both tabs; the client drops it.
         log: logValues,
         batch: batchValues,
+        ppc: ppcResult.ok ? ppcResult.v : [],
+        ppcError: ppcResult.ok ? null : (ppcResult as { ok: false; err: string }).err,
         logRowCount: Math.max(0, logValues.length - 1),
         batchRowCount: Math.max(0, batchValues.length - 1),
+        ppcRowCount: ppcResult.ok ? Math.max(0, ppcResult.v.length - 1) : 0,
         fetched_at: new Date().toISOString(),
       },
     });

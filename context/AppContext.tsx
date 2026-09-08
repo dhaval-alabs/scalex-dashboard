@@ -1,6 +1,6 @@
 "use client";
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { fetchRelayData, RelayRow, BatchRow } from "@/lib/sheets";
+import { fetchRelayData, RelayRow, BatchRow, PpcRow } from "@/lib/sheets";
 import { fetchGadsStats, GadsStats } from "@/lib/gads";
 
 export type RangeValue = "today" | "yesterday" | "7" | "30" | "90" | "this_month" | "last_month";
@@ -72,6 +72,8 @@ interface AppState {
   toggleTheme: () => void;
   relayRows: RelayRow[];
   batchRows: BatchRow[];   // day-5 sweeps — was never fetched before
+  ppcRows: PpcRow[];       // PPC submission sheet — the CPL denominator
+  ppcError: string | null;
   gads: GadsStats | null;
   loading: boolean;
   error: string | null;
@@ -86,6 +88,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [relayRows, setRelayRows] = useState<RelayRow[]>([]);
   const [batchRows, setBatchRows] = useState<BatchRow[]>([]);
+  const [ppcRows, setPpcRows] = useState<PpcRow[]>([]);
+  const [ppcError, setPpcError] = useState<string | null>(null);
   const [gads, setGads] = useState<GadsStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -117,6 +121,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (relay.status === "fulfilled") {
         setRelayRows(relay.value.rows);
         setBatchRows(relay.value.batch);
+        setPpcRows(relay.value.ppc);
+        setPpcError(relay.value.ppcError);
       } else {
         // Surface it. The old published-CSV path returned a sign-in page that
         // parsed into garbage rows, so a broken data path looked like an empty
@@ -144,7 +150,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <Ctx.Provider value={{
       range, setRange: onSetRange, rangeLabel: rangeLabel(range), rangeFootnote: rangeFootnote(range),
       theme, toggleTheme: () => setTheme((t) => (t === "dark" ? "light" : "dark")),
-      relayRows, batchRows, gads, loading, error, lastUpdated,
+      relayRows, batchRows, ppcRows, ppcError, gads, loading, error, lastUpdated,
       refresh: () => loadAll(range),
     }}>
       {children}

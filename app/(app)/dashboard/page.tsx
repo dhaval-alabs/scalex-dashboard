@@ -2,17 +2,23 @@
 import { useMemo } from "react";
 import { useApp } from "@/context/AppContext";
 import { filterByPeriod } from "@/lib/sheets";
-import { summarize, ecRecoveryDaily, biddingMaturity, coverageBySource, day5Summary, totalDelivered, ladderValue } from "@/lib/metrics";
+import { summarize, ecRecoveryDaily, biddingMaturity, coverageBySource, day5Summary, totalDelivered, ladderValue, cplBreakdown } from "@/lib/metrics";
 import { PageHeader, Card, Kpi } from "@/components/ui";
 import { AreaTrend, LineTrend, BarSeries } from "@/components/charts";
 
 export default function DashboardPage() {
-  const { range, rangeLabel, rangeFootnote, relayRows, batchRows, gads, loading } = useApp();
+  const { range, rangeLabel, rangeFootnote, relayRows, batchRows, ppcRows, ppcError, gads, loading } = useApp();
   const rows    = useMemo(() => filterByPeriod(relayRows, range), [relayRows, range]);
   // Day-5 sweeps live in BatchLog, not the Log tab. Without this the delivery
   // figures below count only forward upgrades and understate what we send.
   const batch   = useMemo(() => filterByPeriod(batchRows, range), [batchRows, range]);
   const d5      = useMemo(() => day5Summary(batch), [batch]);
+  const ppc     = useMemo(() => filterByPeriod(ppcRows, range), [ppcRows, range]);
+  const cpl     = useMemo(() => {
+    const spendByCampaign: Record<string, number> = {};
+    (gads?.campaigns || []).forEach((c) => { spendByCampaign[c.name] = c.spend; });
+    return cplBreakdown(ppc, spendByCampaign);
+  }, [ppc, gads]);
   const s       = useMemo(() => summarize(rows), [rows]);
   const ecDaily = useMemo(() => ecRecoveryDaily(rows), [rows]);
   const maturity = useMemo(() => biddingMaturity(rows), [rows]);
@@ -84,19 +90,52 @@ export default function DashboardPage() {
             foot="the denominator above — Google's count, not CRM leads"
             accent="var(--text3)"
           />
-          <Kpi
-            label="CPL (CRM basis)"
-            value="pending"
-            foot="cost per paid click that produced a lead — denominator agreed 8 Sep, not yet computed"
-            accent="var(--text4)"
-          />
-          <Kpi
-            label="Cost per Unique Lead"
-            value="pending"
-            foot="cost per person acquired — distinct emails"
-            accent="var(--text4)"
-          />
         </div>
+      </Card>
+
+      {/* ── CRM-basis CPL, split brand vs non-brand ── */}
+      <Card
+        title="Cost per Lead — CRM basis"
+        sub="Denominator is form submissions from the PPC sheet, not Google's conversion count. CPL counts each paid click that produced a lead; Cost per Unique Lead counts each person once. Blank click IDs are included — attribution runs on UTM and landing page. No junk filter: a junk submission still consumed spend."
+        dateLabel={rangeLabel}
+        loading={loading}
+      >
+        {ppcError ? (
+          <div className="empty-msg">PPC sheet unavailable — {ppcError}</div>
+        ) : cpl.blended.submissions ? (
+          <>
+            <table className="tbl">
+              <thead>
+                <tr>
+                  <th>Segment</th>
+                  <th className="num">Spend</th>
+                  <th className="num">Submissions</th>
+                  <th className="num">Unique leads</th>
+                  <th className="num">CPL</th>
+                  <th className="num">Cost / unique lead</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[cpl.nonBrand, cpl.brand, cpl.blended].map((seg) => (
+                  <tr key={seg.label} style={seg.label === "Blended" ? { fontWeight: 600 } : undefined}>
+                    <td>{seg.label}</td>
+                    <td className="num">₹{Math.round(seg.spend).toLocaleString()}</td>
+                    <td className="num">{seg.submissions.toLocaleString()}</td>
+                    <td className="num">{seg.uniqueLeads.toLocaleString()}</td>
+                    <td className="num">{seg.cpl != null ? "₹" + Math.round(seg.cpl).toLocaleString() : "—"}</td>
+                    <td className="num">{seg.cpul != null ? "₹" + Math.round(seg.cpul).toLocaleString() : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div style={{ fontSize: "0.74rem", color: "var(--text3)", marginTop: "0.6rem", lineHeight: 1.6 }}>
+              Brand search captures existing demand; non-brand generates it. Read the two separately — blending flatters CPL.<br />
+              {cpl.blended.technicalDupsRemoved > 0 && <>{cpl.blended.technicalDupsRemoved} technical duplicate{cpl.blended.technicalDupsRemoved === 1 ? "" : "s"} removed (same email and click ID within 120s — the pre-27-Aug OTP-resend signature). Genuine resubmissions are kept.<br /></>}
+              {cpl.blended.blankGclid > 0 && <>{cpl.blended.blankGclid} submission{cpl.blended.blankGclid === 1 ? "" : "s"} with no click ID, included by design.<br /></>}
+              {cpl.unmatchedCampaign > 0 && <>{cpl.unmatchedCampaign} submission{cpl.unmatchedCampaign === 1 ? "" : "s"} carry no UTM campaign and are excluded from all three rows rather than assigned to either side.</>}
+            </div>
+          </>
+        ) : <div className="empty-msg">No PPC submissions in range</div>}
       </Card>
 
       {/* ── Row 1: EC Recovery + CPL Trend ── */}
