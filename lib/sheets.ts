@@ -123,9 +123,29 @@ export function batchFromValues(values: string[][]): BatchRow[] {
         dropped:   parseFloat(String(c[3] ?? "")) || 0,
         failed:    parseFloat(String(c[4] ?? "")) || 0,
         message,
-        // The recon MCP uses the same DAY5 marker to separate the day-5 leg
-        // from legacy forward-upgrade runs. Without it the two double-count.
-        isDay5: /DAY5/i.test(message) || /DAY5/i.test(status),
+        // Day-5 vs legacy. Verified against live BatchLog rows on 8 Sep 2026 —
+        // an earlier cut tested for a "DAY5" marker, borrowed from the recon
+        // MCP's Log-TAB filter. BatchLog does not use it, so nothing matched
+        // and the day-5 card was empty for every range.
+        //
+        // What BatchLog actually looks like:
+        //   day-5:  7/27/2026 3:42:38  SUCCESS  34 0 0  "eligible:34 remaining:0"
+        //   legacy: 7/19/2026 2:29:05  PARTIAL_FAIL 4 0 4  "[LEGACY] Multiple errors..."
+        //   noise:  7/14/2026 7:57:05  DISABLED 0 0 0  "ENABLE_A5_FORWARD_ONLY is false"
+        //
+        // So the discriminator is the inverse of what was assumed: LEGACY rows
+        // are tagged, day-5 rows are not. runDay5Push()'s logBatchRun writes
+        // "eligible:N remaining:N", which is the positive signal.
+        //
+        // DISABLED rows are excluded — they are a config state, not a run, and
+        // counting them would inflate the run count with zero-work entries.
+        //
+        // Rows with an empty message and a zero count are day-5 sweeps that
+        // found nothing; they are kept so the run count is honest.
+        isDay5:
+          !/\[LEGACY\]/i.test(message) &&
+          status !== "DISABLED" &&
+          (/eligible:\s*\d+/i.test(message) || message.trim() === ""),
       };
     })
     .filter((r) => r.timestamp);
