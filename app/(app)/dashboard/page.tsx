@@ -7,7 +7,7 @@ import { PageHeader, Card, Kpi } from "@/components/ui";
 import { AreaTrend, LineTrend, BarSeries } from "@/components/charts";
 
 export default function DashboardPage() {
-  const { range, rangeLabel, relayRows, batchRows, gads, loading } = useApp();
+  const { range, rangeLabel, rangeFootnote, relayRows, batchRows, gads, loading } = useApp();
   const rows    = useMemo(() => filterByPeriod(relayRows, range), [relayRows, range]);
   // Day-5 sweeps live in BatchLog, not the Log tab. Without this the delivery
   // figures below count only forward upgrades and understate what we send.
@@ -43,6 +43,17 @@ export default function DashboardPage() {
   return (
     <>
       <PageHeader title="Performance Overview" sub="Server-side conversion intelligence · live" />
+
+      {rangeFootnote && (
+        <div style={{
+          padding: "0.6rem 0.85rem", marginBottom: "1.25rem",
+          background: "var(--surface2)", borderRadius: "var(--radius3)",
+          borderLeft: "3px solid var(--amber)", fontSize: "0.78rem",
+          color: "var(--text3)", lineHeight: 1.5,
+        }}>
+          {rangeFootnote}
+        </div>
+      )}
 
       {/* ── KPI strip ── */}
       <div className="kpi-grid">

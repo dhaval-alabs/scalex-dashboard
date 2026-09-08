@@ -3,7 +3,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { fetchRelayData, RelayRow, BatchRow } from "@/lib/sheets";
 import { fetchGadsStats, GadsStats } from "@/lib/gads";
 
-export type RangeValue = "today" | "yesterday" | "7" | "30" | "90" | "this_month";
+export type RangeValue = "today" | "yesterday" | "7" | "30" | "90" | "this_month" | "last_month";
 
 export const RANGE_OPTIONS: { value: RangeValue; label: string }[] = [
   { value: "today", label: "Today" },
@@ -12,7 +12,24 @@ export const RANGE_OPTIONS: { value: RangeValue; label: string }[] = [
   { value: "30", label: "Last 30 days" },
   { value: "90", label: "Last 90 days" },
   { value: "this_month", label: "This month" },
+  { value: "last_month", label: "Last month (complete)" },
 ];
+
+// Rolling windows decline over time even on a healthy pipeline: new days add
+// close to nothing while mature days drop off the back. Anything reading a
+// rolling window as a trend will see a false decline. Fixed windows
+// (this_month / last_month) are the ones to compare period over period.
+export function rangeFootnote(v: RangeValue): string | null {
+  if (v === "90") {
+    return "Rolling 90 days. This window declines over time even when the pipeline is healthy — " +
+           "new days contribute almost nothing yet while mature days fall off the back. " +
+           "Use 'Last month (complete)' for period-over-period comparison.";
+  }
+  if (v === "this_month") {
+    return "Month to date — an incomplete period. Not comparable with a full month.";
+  }
+  return null;
+}
 
 export function rangeLabel(v: RangeValue): string {
   const now = new Date();
@@ -23,6 +40,10 @@ export function rangeLabel(v: RangeValue): string {
     return "Yesterday · " + y.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
   }
   if (v === "this_month") return "This month · " + now.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  if (v === "last_month") {
+    const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    return "Last month · " + lm.toLocaleDateString("en-IN", { month: "long", year: "numeric" });
+  }
   const d = parseInt(v);
   const start = new Date(now); start.setDate(start.getDate() - d);
   return `Last ${d} days · ${start.toLocaleDateString("en-IN", { day: "numeric", month: "short" })} – ${end}`;
@@ -33,6 +54,12 @@ function rangeToDays(v: RangeValue): number {
   if (v === "today") return 1;
   if (v === "yesterday") return 2;
   if (v === "this_month") return new Date().getDate();
+  if (v === "last_month") {
+    // Days elapsed since the 1st of last month, so the GAds pull covers it.
+    const now = new Date();
+    const firstOfLast = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    return Math.ceil((now.getTime() - firstOfLast.getTime()) / 864e5);
+  }
   return parseInt(v);
 }
 
@@ -40,6 +67,7 @@ interface AppState {
   range: RangeValue;
   setRange: (r: RangeValue) => void;
   rangeLabel: string;
+  rangeFootnote: string | null;
   theme: "light" | "dark";
   toggleTheme: () => void;
   relayRows: RelayRow[];
@@ -114,7 +142,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <Ctx.Provider value={{
-      range, setRange: onSetRange, rangeLabel: rangeLabel(range),
+      range, setRange: onSetRange, rangeLabel: rangeLabel(range), rangeFootnote: rangeFootnote(range),
       theme, toggleTheme: () => setTheme((t) => (t === "dark" ? "light" : "dark")),
       relayRows, batchRows, gads, loading, error, lastUpdated,
       refresh: () => loadAll(range),

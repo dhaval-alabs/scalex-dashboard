@@ -185,6 +185,11 @@ export function filterByPeriod<T extends Periodish>(rows: T[], period: number | 
     const ys = y.toDateString();
     return rows.filter((r) => { const d = parseTs(r.timestamp); return d && d.toDateString() === ys; });
   }
+  if (period === "last_month") {
+    const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const end   = new Date(now.getFullYear(), now.getMonth(), 1);
+    return rows.filter((r) => { const d = parseTs(r.timestamp); return d && d >= start && d < end; });
+  }
   if (period === "this_month") {
     return rows.filter((r) => {
       const d = parseTs(r.timestamp);
