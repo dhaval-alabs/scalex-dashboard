@@ -249,32 +249,50 @@ export function cplBreakdown(ppc: PpcRow[], campaignSpend: Record<string, number
 export interface Day5Summary {
   runs: number;
   pushed: number;
-  dropped: number;
+  dropped: number;              // raw total
+  droppedSteadyState: number;   // excluding the single largest run
+  droppedLargestRun: number;
   failed: number;
   delivered: number;      // pushed, i.e. accepted by the Google Ads API
   errorRate: number;      // failed / (pushed + failed)
-  dropRate: number;       // dropped / (pushed + dropped + failed)
+  dropRate: number;       // steady-state dropped / total handled
   lastRun: string;
 }
 
 export function day5Summary(batch: BatchRow[]): Day5Summary {
   let runs = 0, pushed = 0, dropped = 0, failed = 0;
+  let droppedLargestRun = 0;
   let lastRun = "";
   for (const b of batch) {
-    // Day-5 rows only. Legacy forward-upgrade runs share this tab and
-    // double-count if not filtered — the same guard the recon MCP applies.
+    // Day-5 rows only. Legacy runs share this tab and double-count if not
+    // filtered — see isDay5 in lib/sheets.ts for what actually distinguishes
+    // them (it is NOT a "DAY5" marker; that assumption cost a day).
     if (!b.isDay5) continue;
     runs++;
     pushed  += b.processed;
     dropped += b.dropped;
     failed  += b.failed;
+    if (b.dropped > droppedLargestRun) droppedLargestRun = b.dropped;
     if (!lastRun || b.timestamp > lastRun) lastRun = b.timestamp;
   }
+  // Drops mix two different things and BatchLog cannot tell them apart:
+  // genuine expiry past Google's import cutoff (real, ongoing signal loss) and
+  // one-off backlog clears (a pool of stale leads leaving the queue once).
+  //
+  // When one run dominates the total it is almost certainly the latter — e.g.
+  // 20 Jul 2026 dropped 2,760 in a single run when the A5 cutover cleared its
+  // backlog. Reporting the raw total as ongoing loss overstates it, sometimes
+  // by more than double. So the steady-state figure excludes the largest single
+  // run, and the drop rate is computed on that. The raw total stays available
+  // so nothing is hidden.
+  const droppedSteadyState = Math.max(0, dropped - droppedLargestRun);
   const attempted = pushed + failed;
+  const handled = pushed + droppedSteadyState + failed;
   return {
-    runs, pushed, dropped, failed, delivered: pushed,
+    runs, pushed, dropped, droppedSteadyState, droppedLargestRun, failed,
+    delivered: pushed,
     errorRate: attempted ? failed / attempted : 0,
-    dropRate: (pushed + dropped + failed) ? dropped / (pushed + dropped + failed) : 0,
+    dropRate: handled ? droppedSteadyState / handled : 0,
     lastRun,
   };
 }

@@ -190,7 +190,7 @@ export default function DashboardPage() {
             <Kpi label="Forward Upgrades" value={delivery.forward.toLocaleString()} foot="from the Log tab" accent="var(--purple)" />
             <Kpi label="Total Delivered" value={delivery.total.toLocaleString()} foot="forward + day-5 · accepted by the GAds API" accent="var(--green)" />
             <Kpi label="Failed" value={d5.failed.toLocaleString()} foot={`${(d5.errorRate * 100).toFixed(2)}% of attempted · retried next sweep`} accent="var(--coral)" />
-            <Kpi label="Dropped" value={d5.dropped.toLocaleString()} foot={`${(d5.dropRate * 100).toFixed(2)}% · click window expired (terminal)`} accent="var(--amber)" />
+            <Kpi label="Dropped (steady state)" value={d5.droppedSteadyState.toLocaleString()} foot={d5.droppedLargestRun > 0 ? `${(d5.dropRate * 100).toFixed(2)}% · ${d5.dropped} raw, less ${d5.droppedLargestRun} in one run (backlog clear)` : `${(d5.dropRate * 100).toFixed(2)}% · click window expired (terminal)`} accent="var(--amber)" />
             <Kpi label="Last Sweep" value={d5.lastRun ? d5.lastRun.split(" ")[0] : "—"} foot={d5.lastRun ? d5.lastRun.split(" ").slice(1).join(" ") + " · 3:40 AM IST daily" : "no sweep in range"} accent="var(--teal)" />
           </div>
         ) : <div className="empty-msg">No day-5 sweeps in range</div>}
