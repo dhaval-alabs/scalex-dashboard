@@ -47,12 +47,46 @@ export default function DashboardPage() {
       {/* ── KPI strip ── */}
       <div className="kpi-grid">
         <Kpi label="Total Conversions" value={gads ? gads.total_conversions.toLocaleString() : "—"} foot={`${gads?.total_clicks?.toLocaleString() || "—"} clicks · ${rangeLabel}`} accent="var(--teal)" />
-        <Kpi label="Cost Per Lead" value={gads ? "₹" + gads.cpl : "—"} foot={gads?.prev_cpl ? `prev ₹${gads.prev_cpl}` : rangeLabel} accent="var(--green)" />
         <Kpi label="Ad Spend" value={gads ? "₹" + gads.total_spend_lakh + "L" : "—"} foot={`₹${gads?.total_spend?.toLocaleString() || "—"} total`} accent="var(--purple)" />
         <Kpi label="CRM Conversions Sent" value={delivery.total.toLocaleString()} foot={`${delivery.forward.toLocaleString()} forward · ${delivery.day5.toLocaleString()} day-5 sweep`} accent="var(--teal)" />
         <Kpi label="GCLID Attach Rate" value={s.attachRateReliable ? Math.round(s.gclidAttachRate * 100) + "%" : "—"} foot={s.attachRateReliable ? `${s.success} of ${s.reached} with real click ID` : `Base too small (${s.reached}) — needs 30+`} accent="var(--amber)" />
         <Kpi label="EC Only" value={Math.round(s.ecOnlyRate * 100) + "%"} foot={`${s.ecOnly} matched via hashed email/phone`} accent="var(--coral)" />
       </div>
+
+      {/* ── Google's own cost metric — deliberately separated ── */}
+      <Card
+        title="Google Ads — Cost per Conversion (Google's own number)"
+        sub="Google Ads' native metric: spend ÷ conversions Google recorded. NOT a CRM cost-per-lead — the denominator is Google's conversion count, which includes call and WhatsApp taps and excludes CRM leads Google never attributed. Shown separately so it is not mistaken for CPL."
+        dateLabel={rangeLabel}
+        loading={loading}
+      >
+        <div className="kpi-grid">
+          <Kpi
+            label="Google Cost / Conversion"
+            value={gads ? "₹" + gads.cpl : "—"}
+            foot={gads?.prev_cpl ? `prev ₹${gads.prev_cpl} · Google Ads API` : "Google Ads API"}
+            accent="var(--text3)"
+          />
+          <Kpi
+            label="Google Conversions"
+            value={gads ? gads.total_conversions.toLocaleString() : "—"}
+            foot="the denominator above — Google's count, not CRM leads"
+            accent="var(--text3)"
+          />
+          <Kpi
+            label="CPL (CRM basis)"
+            value="pending"
+            foot="cost per paid click that produced a lead — denominator agreed 8 Sep, not yet computed"
+            accent="var(--text4)"
+          />
+          <Kpi
+            label="Cost per Unique Lead"
+            value="pending"
+            foot="cost per person acquired — distinct emails"
+            accent="var(--text4)"
+          />
+        </div>
+      </Card>
 
       {/* ── Row 1: EC Recovery + CPL Trend ── */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem", marginBottom: "1.25rem" }}>
@@ -61,7 +95,7 @@ export default function DashboardPage() {
             ? <AreaTrend data={ecDaily} xKey="date" yKey="pct" color="var(--coral)" height={220} />
             : <div className="empty-msg">No conversion data in range</div>}
         </Card>
-        <Card title="CPL Trend — Weekly" sub="Cost per lead — trailing 12 weeks" dateLabel={rangeLabel} loading={loading}>
+        <Card title="Google Cost / Conversion — Weekly" sub="Google Ads' own metric, trailing 12 weeks. Not CRM cost-per-lead — see the card above." dateLabel={rangeLabel} loading={loading}>
           {weeklyCpl.length
             ? <LineTrend data={weeklyCpl} xKey="week" yKey="cpl" color="var(--teal)" height={220} />
             : <div className="empty-msg">Loading Google Ads data…</div>}
