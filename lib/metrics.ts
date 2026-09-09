@@ -269,12 +269,32 @@ export function cplBreakdown(
   // Submissions carrying no UTM campaign at all. Reported, not silently
   // dropped into one side or the other — they would bias whichever got them.
   const unmatched = ppc.filter((r) => !r.campaign).length;
+  const brandSeg    = segment("Brand", brandRows, brandSpend, windowStartMs);
+  const nonBrandSeg = segment("Non-brand", nonBrandRows, nonBrandSpend, windowStartMs);
+  const blendedSeg  = segment("Blended", ppc.filter((r) => r.campaign),
+                              brandSpend + nonBrandSpend, windowStartMs);
+
+  // Blended must INHERIT a coverage failure, not be tested independently.
+  //
+  // Its own first-submission check passes whenever EITHER side has early rows —
+  // which is precisely when the blend is most misleading. Observed live on the
+  // 30-day window: brand was correctly suppressed (submissions start 24 Aug)
+  // while blended still published Rs 1,012, summing brand's full-window spend
+  // with brand's 14-day submission count. That understates CPL, and it looked
+  // authoritative because it is the bolded subtotal row.
+  if (!brandSeg.coversWindow || !nonBrandSeg.coversWindow) {
+    blendedSeg.coversWindow = false;
+    blendedSeg.cpl  = null;
+    blendedSeg.cpul = null;
+    blendedSeg.coverageNote =
+      'Blended sums both spends, so it inherits the coverage gap above and would ' +
+      'understate CPL. Not shown. Read the segment rows instead.';
+  }
+
   return {
-    brand:    segment("Brand", brandRows, brandSpend, windowStartMs),
-    nonBrand: segment("Non-brand", nonBrandRows, nonBrandSpend, windowStartMs),
-    // Blended inherits the worst case: if either side fails coverage, the
-    // blend is built on a partial denominator too.
-    blended:  segment("Blended", ppc.filter((r) => r.campaign), brandSpend + nonBrandSpend, windowStartMs),
+    brand:    brandSeg,
+    nonBrand: nonBrandSeg,
+    blended:  blendedSeg,
     unmatchedCampaign: unmatched,
   };
 }
