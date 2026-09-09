@@ -161,6 +161,11 @@ export interface CplSegment {
   blankGclid: number;
   cpl: number | null;
   cpul: number | null;
+  // Denominator coverage. Spend always covers the whole window; submissions
+  // only cover it if the segment was being UTM-labelled throughout.
+  firstSubmission: string | null;
+  coversWindow: boolean;
+  coverageNote: string | null;
 }
 
 function dedupeTechnical(rows: PpcRow[]): { kept: PpcRow[]; removed: number } {
@@ -191,18 +196,54 @@ function dedupeTechnical(rows: PpcRow[]): { kept: PpcRow[]; removed: number } {
   return { kept, removed };
 }
 
-function segment(label: string, rows: PpcRow[], spend: number): CplSegment {
+// A segment's CPL is only meaningful if its submissions span the same period as
+// its spend. They can diverge badly and silently.
+//
+// MEASURED, 9 Sep 2026: brand-labelled submissions in the PPC sheet exist ONLY
+// from 24 Aug onward — 133 rows, none before. Brand SPEND covers every window in
+// full. So the dashboard published brand CPL of Rs 1,057 (30d) and Rs 3,017
+// (90d), both being full-period spend over a 17-day denominator. The 90-day
+// figure was overstated roughly 5x, and it looked like a real trend because
+// spend scaled while the denominator sat frozen at 120 in both windows.
+//
+// A frozen denominator across two different windows is the tell. This guard
+// makes it impossible to publish that again: if the first submission lands
+// materially after the window opens, the segment reports no CPL and says why.
+const COVERAGE_GRACE_MS = 36 * 60 * 60 * 1000;   // a day and a half of slack
+
+function segment(label: string, rows: PpcRow[], spend: number, windowStartMs: number | null): CplSegment {
   const { kept, removed } = dedupeTechnical(rows);
   const uniqueEmails = new Set(kept.map((r) => r.email.toLowerCase()));
   const blankGclid = kept.filter((r) => !r.gclid).length;
+
+  let firstMs: number | null = null;
+  for (const r of kept) {
+    const t = new Date(r.timestamp).getTime();
+    if (isFinite(t) && (firstMs === null || t < firstMs)) firstMs = t;
+  }
+  const firstSubmission = firstMs !== null ? new Date(firstMs).toISOString().slice(0, 10) : null;
+
+  let coversWindow = true;
+  let coverageNote: string | null = null;
+  if (windowStartMs !== null && firstMs !== null && firstMs > windowStartMs + COVERAGE_GRACE_MS) {
+    coversWindow = false;
+    const days = Math.round((firstMs - windowStartMs) / 864e5);
+    coverageNote =
+      `Spend covers the whole window but ${label.toLowerCase()} submissions only start ` +
+      `${firstSubmission} — ${days} day${days === 1 ? "" : "s"} in. CPL would divide ` +
+      `full-period spend by a partial denominator, so it is not shown. Use a window ` +
+      `beginning ${firstSubmission} or later.`;
+  }
+
   return {
     label, spend,
     submissions: kept.length,
     uniqueLeads: uniqueEmails.size,
     technicalDupsRemoved: removed,
     blankGclid,
-    cpl:  kept.length ? spend / kept.length : null,
-    cpul: uniqueEmails.size ? spend / uniqueEmails.size : null,
+    cpl:  coversWindow && kept.length ? spend / kept.length : null,
+    cpul: coversWindow && uniqueEmails.size ? spend / uniqueEmails.size : null,
+    firstSubmission, coversWindow, coverageNote,
   };
 }
 
@@ -214,7 +255,11 @@ export interface CplBreakdown {
 }
 
 // campaignSpend: campaign name -> spend, from the Google Ads API.
-export function cplBreakdown(ppc: PpcRow[], campaignSpend: Record<string, number>): CplBreakdown {
+export function cplBreakdown(
+  ppc: PpcRow[],
+  campaignSpend: Record<string, number>,
+  windowStartMs: number | null = null,
+): CplBreakdown {
   let brandSpend = 0, nonBrandSpend = 0;
   for (const [name, spend] of Object.entries(campaignSpend)) {
     if (isBrandCampaign(name)) brandSpend += spend; else nonBrandSpend += spend;
@@ -225,9 +270,11 @@ export function cplBreakdown(ppc: PpcRow[], campaignSpend: Record<string, number
   // dropped into one side or the other — they would bias whichever got them.
   const unmatched = ppc.filter((r) => !r.campaign).length;
   return {
-    brand:    segment("Brand", brandRows, brandSpend),
-    nonBrand: segment("Non-brand", nonBrandRows, nonBrandSpend),
-    blended:  segment("Blended", ppc.filter((r) => r.campaign), brandSpend + nonBrandSpend),
+    brand:    segment("Brand", brandRows, brandSpend, windowStartMs),
+    nonBrand: segment("Non-brand", nonBrandRows, nonBrandSpend, windowStartMs),
+    // Blended inherits the worst case: if either side fails coverage, the
+    // blend is built on a partial denominator too.
+    blended:  segment("Blended", ppc.filter((r) => r.campaign), brandSpend + nonBrandSpend, windowStartMs),
     unmatchedCampaign: unmatched,
   };
 }

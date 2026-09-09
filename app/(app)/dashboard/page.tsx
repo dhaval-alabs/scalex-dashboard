@@ -17,8 +17,20 @@ export default function DashboardPage() {
   const cpl     = useMemo(() => {
     const spendByCampaign: Record<string, number> = {};
     (gads?.campaigns || []).forEach((c) => { spendByCampaign[c.name] = c.spend; });
-    return cplBreakdown(ppc, spendByCampaign);
-  }, [ppc, gads]);
+    // Window start, so cplBreakdown can tell whether each segment's
+    // submissions actually span the period its spend covers.
+    let windowStartMs: number | null = null;
+    for (const r of ppc) {
+      const t = new Date(r.timestamp).getTime();
+      if (isFinite(t) && (windowStartMs === null || t < windowStartMs)) windowStartMs = t;
+    }
+    // The earliest row in the filtered set is not the window start — it is the
+    // earliest row that survived filtering. Derive the intended start from the
+    // range instead, so a segment with no early rows cannot mask the gap.
+    const days = typeof range === "number" ? range : parseInt(String(range));
+    if (isFinite(days)) windowStartMs = Date.now() - days * 864e5;
+    return cplBreakdown(ppc, spendByCampaign, windowStartMs);
+  }, [ppc, gads, range]);
   const s       = useMemo(() => summarize(rows), [rows]);
   const ecDaily = useMemo(() => ecRecoveryDaily(rows), [rows]);
   const maturity = useMemo(() => biddingMaturity(rows), [rows]);
@@ -118,7 +130,7 @@ export default function DashboardPage() {
               <tbody>
                 {[cpl.nonBrand, cpl.brand, cpl.blended].map((seg) => (
                   <tr key={seg.label} style={seg.label === "Blended" ? { fontWeight: 600 } : undefined}>
-                    <td>{seg.label}</td>
+                    <td>{seg.label}{!seg.coversWindow && <span style={{ color: "var(--amber)" }}> ⚠</span>}</td>
                     <td className="num">₹{Math.round(seg.spend).toLocaleString()}</td>
                     <td className="num">{seg.submissions.toLocaleString()}</td>
                     <td className="num">{seg.uniqueLeads.toLocaleString()}</td>
@@ -130,6 +142,9 @@ export default function DashboardPage() {
             </table>
             <div style={{ fontSize: "0.74rem", color: "var(--text3)", marginTop: "0.6rem", lineHeight: 1.6 }}>
               Brand search captures existing demand; non-brand generates it. Read the two separately — blending flatters CPL.<br />
+              {[cpl.nonBrand, cpl.brand, cpl.blended].filter((s) => s.coverageNote).map((s) => (
+                <span key={s.label} style={{ color: "var(--amber)", display: "block", marginTop: "0.3rem" }}>⚠ {s.coverageNote}</span>
+              ))}
               {cpl.blended.technicalDupsRemoved > 0 && <>{cpl.blended.technicalDupsRemoved} technical duplicate{cpl.blended.technicalDupsRemoved === 1 ? "" : "s"} removed (same email and click ID within 120s — the pre-27-Aug OTP-resend signature). Genuine resubmissions are kept.<br /></>}
               {cpl.blended.blankGclid > 0 && <>{cpl.blended.blankGclid} submission{cpl.blended.blankGclid === 1 ? "" : "s"} with no click ID, included by design.<br /></>}
               {cpl.unmatchedCampaign > 0 && <>{cpl.unmatchedCampaign} submission{cpl.unmatchedCampaign === 1 ? "" : "s"} carry no UTM campaign and are excluded from all three rows rather than assigned to either side.</>}
