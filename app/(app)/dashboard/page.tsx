@@ -2,7 +2,7 @@
 import { useMemo } from "react";
 import { useApp } from "@/context/AppContext";
 import { filterByPeriod } from "@/lib/sheets";
-import { summarize, ecRecoveryDaily, biddingMaturity, coverageBySource, day5Summary, totalDelivered, ladderValue, cplBreakdown } from "@/lib/metrics";
+import { summarize, ecRecoveryDaily, biddingMaturity, coverageBySource, day5Summary, totalDelivered, ladderValue, cplBreakdown, weeklyRead } from "@/lib/metrics";
 import { PageHeader, Card, Kpi } from "@/components/ui";
 import { AreaTrend, LineTrend, BarSeries } from "@/components/charts";
 
@@ -37,6 +37,7 @@ export default function DashboardPage() {
   const coverage = useMemo(() => coverageBySource(rows), [rows]);
   const ladder   = useMemo(() => ladderValue(s), [s]);
   const delivery = useMemo(() => totalDelivered(s, d5), [s, d5]);
+  const weekly   = useMemo(() => weeklyRead(rows, ppc, d5), [rows, ppc, d5]);
 
   const weeklyCpl = useMemo(
     () => (gads?.weekly_cpl || []).map((v, i) => ({ week: "W" + (i + 1), cpl: v })).filter((d) => d.cpl != null),
@@ -103,6 +104,51 @@ export default function DashboardPage() {
             accent="var(--text3)"
           />
         </div>
+      </Card>
+
+      {/* ── THE WEEKLY READ — internal, line 1 is the test ── */}
+      <Card
+        title="The Weekly Read — internal"
+        sub="Three lines in order of importance. Line 1 is the test: CPL moves with competition, budget and keyword mix and could be halved by buying worse traffic. Qualified share is what this build exists to move, because Google now gets told which leads qualified."
+        dateLabel={rangeLabel}
+        loading={loading}
+      >
+        <div className="kpi-grid">
+          <Kpi
+            label="1 · Qualified share of submissions"
+            value={weekly.qualifiedShare != null ? (weekly.qualifiedShare * 100).toFixed(1) + "%" : "—"}
+            foot={`${weekly.qualified.toLocaleString()} qualified of ${weekly.submissions.toLocaleString()} submissions — THE TEST`}
+            accent="var(--teal)"
+          />
+          <Kpi
+            label="2 · CPL — non-brand"
+            value={cpl.nonBrand.cpl != null ? "₹" + Math.round(cpl.nonBrand.cpl).toLocaleString() : "—"}
+            foot={cpl.brand.cpl != null
+              ? `brand ₹${Math.round(cpl.brand.cpl).toLocaleString()} · read separately`
+              : "brand suppressed — see coverage note below"}
+            accent="var(--purple)"
+          />
+          <Kpi
+            label="3 · Signal coverage"
+            value={weekly.signalCoverageReliable && weekly.signalCoverage != null
+              ? Math.round(weekly.signalCoverage * 100) + "%"
+              : "—"}
+            foot={weekly.signalCoverageReliable
+              ? `${weekly.withClickId.toLocaleString()} of ${weekly.reachedGoogle.toLocaleString()} reaching Google carry a click ID`
+              : `Base too small (${weekly.reachedGoogle}) — the plumbing check`}
+            accent="var(--blue)"
+          />
+        </div>
+        {!weekly.conclusive && (
+          <div style={{
+            marginTop: "0.75rem", padding: "0.6rem 0.85rem",
+            background: "var(--surface2)", borderRadius: "var(--radius3)",
+            borderLeft: "3px solid var(--amber)", fontSize: "0.78rem",
+            color: "var(--text3)", lineHeight: 1.55,
+          }}>
+            {weekly.note}
+          </div>
+        )}
       </Card>
 
       {/* ── CRM-basis CPL, split brand vs non-brand ── */}

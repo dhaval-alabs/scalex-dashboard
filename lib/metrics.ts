@@ -109,6 +109,80 @@ export function ladderValue(sum: RelaySummary): LadderValueRow[] {
 }
 
 
+
+// ── THE WEEKLY READ ──────────────────────────────────────────────────────────
+//
+// Three lines, in Sumeet's order of importance (10 Sep). Internal only — not
+// client-facing until direction is established.
+//
+// LINE 1 IS THE TEST. CPL is not. CPL moves with competition, seasonality,
+// budget and keyword mix, and could be halved tomorrow by buying worse traffic.
+// The thing this whole build exists to move is the share of submissions that
+// reach Qualified — because Google now gets told which leads qualified, so
+// bidding should drift toward the clicks that produce them.
+//
+// HONEST CONSTRAINT, built in rather than footnoted: qualified only began
+// reaching bidding around 19 Aug 2026, and Google's bidding responds over
+// weeks. Nothing before mid-October is conclusive. Anything that moves before
+// then is noise, and `conclusive` says so on every read rather than leaving it
+// to whoever is looking.
+export const BIDDING_SIGNAL_LIVE_FROM = Date.UTC(2026, 7, 19);   // 19 Aug 2026
+export const CONCLUSIVE_FROM          = Date.UTC(2026, 9, 15);   // mid-Oct 2026
+
+export interface WeeklyRead {
+  // 1 — the test
+  submissions: number;
+  qualified: number;
+  qualifiedShare: number | null;
+  // 2 — the cost check (from cplBreakdown, brand and non-brand separately)
+  // 3 — the plumbing check
+  reachedGoogle: number;
+  withClickId: number;
+  signalCoverage: number | null;
+  signalCoverageReliable: boolean;
+  // framing
+  conclusive: boolean;
+  weeksOfSignal: number;
+  note: string;
+}
+
+export function weeklyRead(rows: RelayRow[], ppc: PpcRow[], d5: Day5Summary): WeeklyRead {
+  // Qualified is counted from the relay log by conv type, deduped by prospect —
+  // one lead reaching Qualified is one qualified lead however many stage events
+  // it generated.
+  const qualifiedProspects = new Set<string>();
+  for (const r of rows) {
+    if (r.convId === "qualified" && r.prospectId) qualifiedProspects.add(r.prospectId);
+  }
+  // Denominator is PPC submissions, the same basis as CPL, so the two lines are
+  // comparable rather than measuring different populations.
+  const { kept } = dedupeTechnical(ppc);
+  const submissions = kept.length;
+  const qualified = qualifiedProspects.size;
+
+  const sum = summarize(rows);
+  const reachedGoogle = sum.reached + d5.delivered;
+  const withClickId = sum.success;   // SUCCESS carries a real gclid; EC_ONLY does not
+
+  const now = Date.now();
+  const weeksOfSignal = Math.max(0, Math.floor((now - BIDDING_SIGNAL_LIVE_FROM) / (7 * 864e5)));
+  const conclusive = now >= CONCLUSIVE_FROM;
+
+  return {
+    submissions, qualified,
+    qualifiedShare: submissions ? qualified / submissions : null,
+    reachedGoogle, withClickId,
+    signalCoverage: reachedGoogle ? withClickId / reachedGoogle : null,
+    signalCoverageReliable: reachedGoogle >= ATTACH_RATE_MIN_BASE,
+    conclusive, weeksOfSignal,
+    note: conclusive
+      ? `${weeksOfSignal} weeks since qualified began reaching bidding (19 Aug).`
+      : `Not yet conclusive. Qualified began reaching bidding 19 Aug — ${weeksOfSignal} ` +
+        `week${weeksOfSignal === 1 ? "" : "s"} ago — and Google's bidding responds over ` +
+        `weeks. Treat movement before mid-October as noise, in either direction.`,
+  };
+}
+
 // ── CPL AND COST PER UNIQUE LEAD ─────────────────────────────────────────────
 //
 // Definitions settled with Sumeet, 8 Sep 2026. TWO metrics, not one, because
