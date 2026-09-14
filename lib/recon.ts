@@ -1,6 +1,7 @@
 // lib/recon.ts — ScaleX Recon MCP client (browser-side fetch)
 
-export const RECON_MCP_URL = "https://scalex-recon-mcp.vercel.app/api/mcp";
+import { CLIENT } from "./client-config";
+export const RECON_MCP_URL = CLIENT.recon.mcpUrl;
 
 export async function callReconMCP(tool: string, args: Record<string, unknown> = {}) {
   const resp = await fetch(RECON_MCP_URL, {

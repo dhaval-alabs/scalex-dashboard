@@ -5,6 +5,7 @@ import { filterByPeriod } from "@/lib/sheets";
 import { coverageBySource, skipBreakdown } from "@/lib/metrics";
 import { callReconMCP } from "@/lib/recon";
 import { PageHeader, Card, Kpi } from "@/components/ui";
+import { CLIENT } from "@/lib/client-config";
 
 // Coverage meaning helper
 function coverageIntent(source: string, coverage: number): { label: string; note: string; color: string } {
@@ -15,7 +16,7 @@ function coverageIntent(source: string, coverage: number): { label: string; note
       return { label: "0%", note: "Expected — off-site lead, no GCLID", color: "var(--text4)" };
     if (s.includes("ppc-sm") || s.includes("social"))
       return { label: "0%", note: "Expected — Meta/Social, not Google Ads", color: "var(--text4)" };
-    if (s.includes("organic") || s.includes("direct") || s.includes("analytixlabs") || s.includes("referral"))
+    if (CLIENT.organicSourceHints.some((h) => s.includes(h)))
       return { label: "0%", note: "Expected — non-paid source", color: "var(--text4)" };
     return { label: "0%", note: "⚠️ Verify — may be a gap", color: "var(--coral)" };
   }
@@ -177,7 +178,7 @@ export default function ReconciliationPage() {
       <Card title="Skip-Reason Breakdown" sub={`Why ${totalSkips.toLocaleString()} rows were skipped in this range — all expected, none are errors`} loading={loading}>
         <SkipChart data={skips} />
         <div style={{ marginTop: "0.9rem", padding: "0.6rem 0.75rem", background: "var(--surface2)", borderRadius: "var(--radius3)", fontSize: "0.78rem", color: "var(--text4)", lineHeight: 1.6 }}>
-          <strong style={{ color: "var(--text3)" }}>Why skips are fine:</strong> The relay is designed to upload only Google Ads PPC leads. Everything else (social, WhatsApp, phone, organic, walk-in) is intentionally excluded — uploading these would pollute Smart Bidding with unconvertible traffic. A high skip count means AnalytixLabs gets a lot of non-PPC traffic, not that the relay is broken.
+          <strong style={{ color: "var(--text3)" }}>Why skips are fine:</strong> The relay is designed to upload only Google Ads PPC leads. Everything else (social, WhatsApp, phone, organic, walk-in) is intentionally excluded — uploading these would pollute Smart Bidding with unconvertible traffic. A high skip count means {CLIENT.name} gets a lot of non-PPC traffic, not that the relay is broken.
         </div>
       </Card>
     </>

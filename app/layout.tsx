@@ -1,7 +1,8 @@
 import "./globals.css";
 import { AppProvider } from "@/context/AppContext";
 
-export const metadata = { title: "ScaleX Workbench · AnalytixLabs", description: "Server-side conversion intelligence" };
+import { CLIENT } from "@/lib/client-config";
+export const metadata = { title: `ScaleX Workbench · ${CLIENT.name}`, description: "Server-side conversion intelligence" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

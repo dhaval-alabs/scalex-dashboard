@@ -32,12 +32,13 @@
 // relay owns that sheet and the dashboard has no business writing to it.
 
 import { NextResponse } from "next/server";
+import { CLIENT, validateClientConfig } from "@/lib/client-config";
 import crypto from "crypto";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const SPREADSHEET_ID = "1U3q09dNFDF-67mrJO-gqEbsKby4ylr-AF631w8zneDc";
+const SPREADSHEET_ID = CLIENT.sheets.relayLogId;
 const LOG_TAB = "Log";
 const BATCHLOG_TAB = "BatchLog";
 
@@ -49,8 +50,8 @@ const BATCHLOG_TAB = "BatchLog";
 // back out of stage events is how you end up with a figure that agrees with
 // nothing. The PPC sheet is already one row per submission, which is exactly
 // the shape Sumeet's CPL definition asks for.
-const PPC_SPREADSHEET_ID = "1mLxadboR2oQO1CNi3ExpsoK-fNTmm9EFcvLh9yTZLqE";
-const PPC_TAB = "NextJS";
+const PPC_SPREADSHEET_ID = CLIENT.sheets.ppcSubmissionsId;
+const PPC_TAB = CLIENT.sheets.ppcTab;
 
 // ── Service-account access token (JWT bearer flow) ────────────────────────────
 // Scoped to spreadsheets.readonly. Narrower than the sheets scope the relay
@@ -125,6 +126,8 @@ async function readRange(token: string, range: string, spreadsheetId = SPREADSHE
 
 export async function GET() {
   try {
+    // Fail with a readable message rather than rendering blanks.
+    validateClientConfig();
     const token = await getSheetsToken();
 
     // Both tabs, in parallel. Column letters, not open-ended ranges, so a

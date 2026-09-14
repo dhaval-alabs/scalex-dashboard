@@ -4,6 +4,7 @@ import { useApp } from "@/context/AppContext";
 import { filterByPeriod } from "@/lib/sheets";
 import { summarize } from "@/lib/metrics";
 import { PageHeader, Card, Kpi } from "@/components/ui";
+import { CLIENT } from "@/lib/client-config";
 
 export default function PixelHealthPage() {
   const { range, rangeLabel, relayRows, loading } = useApp();
@@ -32,7 +33,7 @@ export default function PixelHealthPage() {
         <table className="tbl">
           <tbody>
             <tr><td>sGTM Container</td><td className="num">GTM-NL8L86MW</td></tr>
-            <tr><td>sGTM Domain</td><td className="num">sgtmv1.analytixlabs.co.in</td></tr>
+            <tr><td>sGTM Domain</td><td className="num">{CLIENT.tracking.sgtmDomain}</td></tr>
             <tr><td>Google Ads API</td><td className="num">v23</td></tr>
             <tr><td>Relay Status</td><td><span className="badge green">● Live</span></td></tr>
           </tbody>

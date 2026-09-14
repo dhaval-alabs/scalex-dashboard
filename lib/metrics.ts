@@ -2,6 +2,7 @@
 // All pages compute from these helpers so numbers never diverge between widgets.
 
 import { RelayRow, BatchRow, PpcRow } from "./sheets";
+import { CLIENT } from "./client-config";
 
 export interface RelaySummary {
   total: number;
@@ -76,13 +77,8 @@ export function summarize(rows: RelayRow[]): RelaySummary {
 //
 // This is the chart someone would use to reason about bid strategy, so the
 // inversion was the most actively misleading thing on the page.
-export const LADDER_VALUE: Record<string, number> = {
-  lead_submitted: 200,
-  signup: 500,
-  qualified: 2000,
-  converted: 10000,
-  disqualified: 1,
-};
+// Sourced from the client config so it cannot drift from the relay ladder.
+export const LADDER_VALUE: Record<string, number> = CLIENT.ladderValues;
 
 export interface LadderValueRow {
   key: string;
@@ -126,8 +122,8 @@ export function ladderValue(sum: RelaySummary): LadderValueRow[] {
 // weeks. Nothing before mid-October is conclusive. Anything that moves before
 // then is noise, and `conclusive` says so on every read rather than leaving it
 // to whoever is looking.
-export const BIDDING_SIGNAL_LIVE_FROM = Date.UTC(2026, 7, 19);   // 19 Aug 2026
-export const CONCLUSIVE_FROM          = Date.UTC(2026, 9, 15);   // mid-Oct 2026
+export const BIDDING_SIGNAL_LIVE_FROM = CLIENT.timeline.biddingSignalLiveFrom;
+export const CONCLUSIVE_FROM          = CLIENT.timeline.conclusiveFrom;
 
 export interface WeeklyRead {
   // 1 — the test
@@ -223,7 +219,7 @@ const TECHNICAL_DUP_WINDOW_MS = 120 * 1000;
 // generates it. Blending them flatters CPL, which is why Sumeet asked for the
 // split rather than one number.
 export function isBrandCampaign(name: string): boolean {
-  return /brand/i.test(name || "");
+  return CLIENT.brandCampaignPattern.test(name || "");
 }
 
 export interface CplSegment {

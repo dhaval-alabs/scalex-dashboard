@@ -2,6 +2,7 @@
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useApp, RANGE_OPTIONS, RangeValue } from "@/context/AppContext";
+import { CLIENT } from "@/lib/client-config";
 
 const NAV = [
   { group: "Overview", links: [
@@ -61,7 +62,7 @@ export default function Sidebar() {
         {/* Fallback icon (hidden by default) */}
         <div className="brand-logo" style={{ display: "none" }}>S</div>
       </div>
-      <div className="brand-sub">AnalytixLabs · Workbench</div>
+      <div className="brand-sub">{CLIENT.displayName}</div>
 
       {/* Global range selector */}
       <div className="range-box">

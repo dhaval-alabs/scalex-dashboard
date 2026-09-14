@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { CLIENT } from "@/lib/client-config";
 
 export default function LoginPage() {
   const [stage, setStage] = useState<"email" | "otp">("email");
@@ -34,7 +35,7 @@ export default function LoginPage() {
         <div className="brand" style={{ marginBottom: "0.5rem" }}>
           <div className="brand-logo">S</div><div className="brand-name">ScaleX Workbench</div>
         </div>
-        <div className="page-sub" style={{ marginBottom: "1.25rem" }}>AnalytixLabs · sign in to continue</div>
+        <div className="page-sub" style={{ marginBottom: "1.25rem" }}>{CLIENT.name} · sign in to continue</div>
         {stage === "email" ? (
           <>
             <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@company.com" onKeyDown={(e) => e.key === "Enter" && requestOtp()}

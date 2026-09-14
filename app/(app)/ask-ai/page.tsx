@@ -1,6 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import { PageHeader } from "@/components/ui";
+import { CLIENT } from "@/lib/client-config";
 
 interface Msg { role: "user" | "assistant"; content: string; isLoading?: boolean; }
 
@@ -122,7 +123,7 @@ export default function AskAiPage() {
       {msgs.length === 0 && (
         <div className="card">
           <div className="card-head">
-            <div className="card-title">Ask anything about AnalytixLabs performance</div>
+            <div className="card-title">Ask anything about {CLIENT.name} performance</div>
             <div className="card-sub">Pulls live data from Google Ads and the ScaleX relay pipeline</div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>

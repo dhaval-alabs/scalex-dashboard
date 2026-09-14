@@ -1,3 +1,4 @@
+import { CLIENT } from "@/lib/client-config";
 // app/api/ask-ai/route.ts
 // Auth-gated, rate-limited proxy → Anthropic claude-haiku-4-5
 // Data sources: ScaleX Recon MCP (relay) + GAds Vercel MCP (campaigns/keywords)
@@ -49,7 +50,7 @@ async function callGadsMCP(tool: string, args: Record<string, unknown> = {}): Pr
 
 // ── Call ScaleX Recon MCP server-side ─────────────────────────
 async function callReconMCP(tool: string, args: Record<string, unknown> = {}): Promise<any> {
-  const MCP_URL = "https://scalex-recon-mcp.vercel.app/api/mcp";
+  const MCP_URL = CLIENT.recon.mcpUrl;
   const body = {
     jsonrpc: "2.0", id: 1, method: "tools/call",
     params: { name: tool, arguments: args }
@@ -219,7 +220,7 @@ ${JSON.stringify(rt, null, 2)}`);
   return blocks.join("\n\n");
 }
 
-const SYSTEM = `You are the ScaleX Intelligence Assistant for AnalytixLabs — an EdTech company running Google Ads to acquire Data Science students. You assist C-level executives and directors with performance questions answered from live data.
+const SYSTEM = `You are the ScaleX Intelligence Assistant for ${CLIENT.name} — ${CLIENT.assistant.role}. ${CLIENT.assistant.context}
 
 You have access to TWO live data sources injected as [LIVE DATA] blocks in messages:
 1. GOOGLE ADS — campaign performance, CPL, spend, keywords, search terms, budget pacing
